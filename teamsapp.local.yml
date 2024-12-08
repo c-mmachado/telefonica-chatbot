@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=https://aka.ms/teams-toolkit/v1.2/yaml.schema.json
+version: v1.2
+
+additionalMetadata:
+  sampleTag: TeamsFx-Samples:command-bot-with-sso
+
+provision:
+  # Create Azure Active Directory application when the environment variable that stores clientId is empty.
+  # Also create client secret for the application when generateClientSecret parameter is true and the environment variable that stores clientSecret is empty.
+  # When creating new Azure Active Directory application, this action generates clientId, objectId, tenantId, authority and authorityHost.
+  # When creating new client secret, this action generates clientSecret.
+  # Refer to https://aka.ms/teamsfx-actions/aadapp-create for more details.
+  - uses: aadApp/create
+    with:
+      name: ${{AAD_APP_DISPLAY_NAME}}-aad # Note: when you run aadApp/update, the AAD app name will be updated based on the definition in manifest. If you don't want to change the name, make sure the name in AAD manifest is the same with the name defined here.
+      generateClientSecret: true # If the value is false, the action will not generate client secret for you
+      signInAudience: "AzureADMyOrg" # Authenticate users with a Microsoft work or school account in your organization's Azure AD tenant (for example, single tenant).
+    # Write the information of created resources into environment file for the specified environment variable(s).
+    writeToEnvironmentFile: # Write the information of created resources into environment file for the specified environment variable(s).
+      clientId: AAD_APP_CLIENT_ID
+      clientSecret: SECRET_AAD_APP_CLIENT_SECRET # Environment variable that starts with `SECRET_` will be stored to the .env.{envName}.user environment file
+      objectId: AAD_APP_OBJECT_ID
+      tenantId: AAD_APP_TENANT_ID
+      authority: AAD_APP_OAUTH_AUTHORITY
+      authorityHost: AAD_APP_OAUTH_AUTHORITY_HOST
+
+  # This action will create a new Teams app for you if TEAMS_APP_ID environment variable is empty or the app with TEAMS_APP_ID is not found from Teams Developer Portal.
+  # Refer to https://aka.ms/teamsfx-actions/teamsapp-create for more details
+  - uses: teamsApp/create
+    with:
+      # Teams app name
+      name: ${{TEAMS_APP_DISPLAY_NAME}}${{APP_NAME_SUFFIX}}
+    # Write the information of created resources into environment file for the specified environment variable(s).
+    writeToEnvironmentFile:
+      teamsAppId: TEAMS_APP_ID
+
+  # Create a new or reuse an existing Azure Active Directory application for bot. 
+  # Refer to https://aka.ms/teamsfx-actions/botaadapp-create for more details.
+  # - uses: botAadApp/create
+  #   with:
+  #     # The Azure Active Directory application's display name
+  #     name: sso-command-bot${{APP_NAME_SUFFIX}}
+  #   writeToEnvironmentFile:
+  #     # The Azure Active Directory application's client id created for bot.
+  #     botId: BOT_ID
+  #     # The Azure Active Directory application's client secret created for bot.
+  #     botPassword: SECRET_BOT_PASSWORD
+
+  # Execute a user defined script.
+  # Refer to https://aka.ms/teamsfx-actions/script for more details.
+  - uses: script
+    with:
+      run:
+        echo "::set-teamsfx-env BOT_TYPE=SingleTenant";
+        echo "::set-teamsfx-env BOT_TENANT_ID=${{AAD_APP_TENANT_ID}}";
+        # echo "::set-teamsfx-env BOT_TYPE=MultiTenant";
+        # echo "::set-teamsfx-env BOT_TENANT_ID=common";
+
+  # Create Azure resources using the referenced Bicep/JSON files.
+  # Outputs from Bicep/JSON will be persisted in the current Teams Toolkit environment following certain naming convertion.
+  # Refer to https://aka.ms/teamsfx-actions/arm-deploy for more details on the naming convertion rule.
+  - uses: arm/deploy
+    with:
+      subscriptionId: ${{AZURE_SUBSCRIPTION_ID}} # The AZURE_SUBSCRIPTION_ID is a built-in environment variable. TeamsFx will ask you select one subscription if its value is empty. You're free to reference other environment varialbe here, but TeamsFx will not ask you to select subscription if it's empty in this case.
+      resourceGroupName: ${{AZURE_RESOURCE_GROUP_NAME}} # The AZURE_RESOURCE_GROUP_NAME is a built-in environment variable. TeamsFx will ask you to select or create one resource group if its value is empty. You're free to reference other environment varialbe here, but TeamsFx will not ask you to select or create resource grouop if it's empty in this case.
+      templates:
+        - path: ./infra/botRegistration/azurebot.bicep
+          parameters: ./infra/azure.parameters.json
+          deploymentName: Create-resources-for-bot
+      bicepCliVersion: v0.9.1 # Teams Toolkit will download this bicep CLI version from github for you, will use bicep CLI in PATH if you remove this config.
+
+  # Create or update the bot registration on dev.botframework.com.
+  # Refer to https://aka.ms/teamsfx-actions/botframework-create for more details.
+  # - uses: botFramework/create
+  #   with:
+  #     botId: ${{AAD_APP_CLIENT_ID}}
+  #     name: ${{AAD_APP_DISPLAY_NAME}}
+  #     messagingEndpoint: ${{BOT_ENDPOINT}}/api/messages
+  #     description: ""
+  #     channels:
+  #       - name: msteams
+
+  # Update Azure Active Directory application based on the given Azure Active Directory application manifest. 
+  # If the manifest uses AAD_APP_ACCESS_AS_USER_PERMISSION_ID and the environment variable is empty, this action will generate a random id and output it. 
+  # Refer to https://aka.ms/teamsfx-actions/aadapp-update for more details.
+  - uses: aadApp/update
+    with:
+      manifestPath: ./aad.manifest.json # Relative path to teamsfx folder. Environment variables in manifest will be replaced before applying to AAD app
+      outputFilePath: ./build/aad.manifest.${{TEAMSFX_ENV}}.json
+
+  # This action will validate Teams app manifest with manifest schema. 
+  # Refer to https://aka.ms/teamsfx-actions/teamsapp-validate for more details.
+  - uses: teamsApp/validateManifest
+    with:
+      # Path to manifest template
+      manifestPath: ./appPackage/manifest.json
+
+  # This action will render Teams app manifest template with environment variables, and zip manifest file with two icons. 
+  # Refer to https://aka.ms/teamsfx-actions/teamsapp-zipAppPackage for more details.
+  - uses: teamsApp/zipAppPackage
+    with:
+      # Path to manifest template
+      manifestPath: ./appPackage/manifest.json
+      outputZipPath: ./appPackage/build/appPackage.${{TEAMSFX_ENV}}.zip
+      outputJsonPath: ./appPackage/build/manifest.${{TEAMSFX_ENV}}.json
+
+  # This action will validate Teams app package file using validation rules. 
+  # Refer to https://aka.ms/teamsfx-actions/teamsapp-validate for more details.
+  - uses: teamsApp/validateAppPackage
+    with:
+      # Relative path to this file. This is the path for built zip file.
+      appPackagePath: ./appPackage/build/appPackage.${{TEAMSFX_ENV}}.zip
+
+  # Apply the Teams app manifest to an existing Teams app in Teams Developer Portal. 
+  # Will use the app id in manifest.json file to determine which Teams app to update. 
+  # Refer to https://aka.ms/teamsfx-actions/teamsapp-update for more details.
+  - uses: teamsApp/update
+    with:
+      appPackagePath: ./appPackage/build/appPackage.${{TEAMSFX_ENV}}.zip # Relative path to teamsfx folder. This is the path for building zip file.
+
+deploy:
+  # Execute npm command with arguments. 
+  # Refer to https://aka.ms/teamsfx-actions/cli-run-npm-command for more details.
+  - uses: cli/runNpmCommand
+    with:
+      args: install --no-audit
+  # Create or update variables to environment file. 
+  # Refer to https://aka.ms/teamsfx-actions/file-createorupdateenvironmentfile for more details.
+  - uses: file/createOrUpdateEnvironmentFile
+    with:
+      target: ./.localConfigs
+      envs:
+        BOT_ID: ${{BOT_ID}}
+        BOT_PASSWORD: ${{SECRET_BOT_PASSWORD}}
+        BOT_DOMAIN: ${{BOT_DOMAIN}}
+        BOT_TYPE: ${{BOT_TYPE}}
+        BOT_CONNECTION_NAME: ${{BOT_CONNECTION_NAME}}
+        BOT_TENANT_ID: ${{BOT_TENANT_ID}}
+        AAD_APP_CLIENT_ID: ${{AAD_APP_CLIENT_ID}}
+        AAD_APP_CLIENT_SECRET: ${{SECRET_AAD_APP_CLIENT_SECRET}}
+        AAD_APP_TENANT_ID: ${{AAD_APP_TENANT_ID}}
+        AAD_APP_OAUTH_AUTHORITY_HOST: ${{AAD_APP_OAUTH_AUTHORITY_HOST}}
+        AAD_APP_ACCESS_AS_USER_PERMISSION_ID: ${{AAD_APP_ACCESS_AS_USER_PERMISSION_ID}}
+        TEAMS_APP_ID: ${{TEAMS_APP_ID}}
+        TEAMS_APP_TENANT_ID: ${{TEAMS_APP_TENANT_ID}}
+        

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceBaseName": {
+      "value": "bot${{RESOURCE_SUFFIX}}"
+    },
+    "botServiceSku": {
+      "value": "F0"
+    },
+    "botDisplayName": {
+      "value": "${{BOT_DISPLAY_NAME}}"
+    },
+    "botDomain": {
+      "value": "${{BOT_DOMAIN}}"
+    },
+    "botType": {
+      "value": "${{BOT_TYPE}}"
+    },
+    "botTenantId": {
+      "value": "${{BOT_TENANT_ID}}"
+    },
+    "botLoginUrl": {
+      "value": "https://login.microsoftonline.com"
+    },
+    "botAadAppClientId": {
+      "value": "${{BOT_ID}}"
+    },
+    "aadAppClientId": {
+      "value": "${{AAD_APP_CLIENT_ID}}"
+    },
+    "aadAppClientSecret": {
+      "value": "${{SECRET_AAD_APP_CLIENT_SECRET}}"
+    }
+  }
+}

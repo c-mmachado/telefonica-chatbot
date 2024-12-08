@@ -1,0 +1,36 @@
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.5",
+    "type": "AdaptiveCard",
+    "refresh": {
+        "action": {
+            "fallback": "drop",
+            "type": "Action.Execute",
+            "verb": "refresh",
+            "data": {
+                "team": "${team}",
+                "channel": "${channel}",
+                "conversation": "${conversation}",
+                "from": "${from}",
+                "command": "/ticket"
+            }
+        },
+        "userIds": [
+            "${userIds}"
+        ]
+    },
+    "body": [
+        {
+            "type": "TextBlock",
+            "text": "Preparing to create a new ticket...",
+            "wrap": true
+        },
+        {
+            "type": "TextBlock",
+            "spacing": "None",
+            "text": "Please wait a few moments while the bot prepares the ticket form.",
+            "isSubtle": true,
+            "wrap": true
+        }
+    ]
+}
