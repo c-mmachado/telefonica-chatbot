@@ -53,7 +53,7 @@ resource aadV2BotServiceConnection 'Microsoft.BotService/botServices/connections
   properties: {
     serviceProviderDisplayName: 'Azure Active Directory v2'
     serviceProviderId: '30dd229c-58e3-4a48-bdfd-91ec48eb906c'
-    scopes: 'User.Read Team.ReadBasic.All Channel.ReadBasic.All ChatMessage.Read ProfilePhoto.Read.All ChannelMessage.Read.All'
+    scopes: 'User.Read Team.ReadBasic.All Channel.ReadBasic.All ChatMessage.Read ProfilePhoto.Read.All ChannelMessage.Read.All Files.Read.All'
     parameters: [
       {
         key: 'clientId'

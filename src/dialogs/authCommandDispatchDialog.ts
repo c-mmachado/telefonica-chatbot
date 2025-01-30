@@ -12,45 +12,27 @@ import {
 } from "botbuilder-dialogs";
 import {
   ActivityTypes,
-  ChannelAccount,
-  ChannelInfo,
-  ConversationAccount,
   ConversationState,
-  MessageFactory,
   StatePropertyAccessor,
   Storage,
-  TeamDetails,
   TurnContext,
-  CardFactory,
   tokenExchangeOperationName,
   verifyStateOperationName,
   TokenResponse,
   InputHints,
 } from "botbuilder";
-import { ErrorCode, ErrorWithCode } from "@microsoft/teamsfx";
-import * as ACData from "adaptivecards-templating";
-
 import {
-  SimpleGraphClient,
-  TeamChannelMessage,
-  TeamChannelResponse,
-} from "../utils/graphClient";
-import ticketCard from "../adaptiveCards/templates/createTicketCard.json";
-import config from "../config/config";
+  ErrorCode,
+  ErrorWithCode,
+  OnBehalfOfCredentialAuthConfig,
+  TeamsBotSsoPrompt,
+  TeamsBotSsoPromptSettings,
+  TeamsBotSsoPromptTokenResponse,
+} from "@microsoft/teamsfx";
 
-export type WaterfallStepContextOptions<T> = {
-  command: string;
-  data?: T;
-};
-
-type AdaptiveCardActionSSORefreshData =
-  | {
-      team: TeamDetails;
-      channel: ChannelInfo;
-      conversation: ConversationAccount;
-      from: ChannelAccount;
-    }
-  | undefined;
+import { RunnableDialog, WaterfallStepContextOptions } from "./dialog";
+import { BotConfiguration } from "../config/config";
+import { ContextHint, HandlerManager } from "../commands/handlerManager";
 
 const MAIN_DIALOG = "MainDialog";
 const INITIAL_DIALOG_ID = "MainWaterfallDialog";
@@ -59,26 +41,20 @@ const OAUTH_PROMPT_ID = "OAuthPrompt";
 
 const DIALOG_DATA = "dialogState";
 
-export class AuthCommandDispatchDialog extends ComponentDialog {
+export class AuthCommandDispatchDialog
+  extends ComponentDialog
+  implements RunnableDialog
+{
+  public readonly name: string = "authRefresh";
+
   private readonly _dialogStateAccessor: StatePropertyAccessor<DialogState>;
+  private readonly _dedupStorageKeys: string[] = [];
 
-  private readonly _dedupStorageKeys: string[];
-
-  /**
-   * Initializes a new instance of the MainDialog class.
-   *
-   * The dialog is composed of a waterfall dialog with the following steps:
-   *  - PromptStep: Prompts the user to log in using SSO.
-   *  - LoginStep: Verifies that the user has logged in.
-   *
-   *
-   * The dialog makes use of TeamsBotSsoPrompt dialog that is used to handle the SSO login process.
-   *
-   * @param {ConversationState} conversationState The state of the conversation.
-   */
   constructor(
+    config: BotConfiguration,
     conversationState: ConversationState,
-    private _dedupStorage: Storage
+    private readonly _dedupStorage: Storage,
+    private readonly _handlerManager: HandlerManager
   ) {
     super(MAIN_DIALOG);
 
@@ -88,9 +64,11 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
     //   scopes: [
     //     "User.Read",
     //     "Channel.ReadBasic.All",
+    //     "ChannelMessage.Read.All",
     //     "Team.ReadBasic.All",
     //     "ChatMessage.Read",
     //     "ProfilePhoto.Read.All",
+    //     "Files.Read.All",
     //   ],
     //   timeout: 900000,
     //   endOnInvalidMessage: true,
@@ -101,15 +79,15 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
     //   tenantId: config.tenantId,
     //   clientSecret: config.clientSecret,
     // };
-    // const loginUrl = `https://${config.botDomain}/auth-start.html`;
+    // const loginUrl = 'https://login.microsoftonline.com' // `https://${config.botDomain}/auth-start.html`;
     // this.addDialog(
     //   new TeamsBotSsoPrompt(
     //     authConfig,
     //     loginUrl,
     //     TEAMS_BOT_SSO_PROMPT_ID,
     //     // {
-    //     //   title: "Consent Flow",
-    //     //   text: "Please review and accept the consent flow to continue.",
+    //     //   title: "Flujo Consentimiento",
+    //     //   text: "Revise y acepte el flujo de consentimiento para continuar.",
     //     //   timeout: 900000,
     //     //   endOnInvalidMessage: true,
     //     //   showSignInLink: true,
@@ -122,8 +100,8 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
     const oauthPrompt = new OAuthPrompt(
       OAUTH_PROMPT_ID,
       {
-        title: "Consent Flow",
-        text: "Please review and accept the consent flow to continue.",
+        title: "Flujo Consentimiento",
+        text: "Revise y acepte el flujo de consentimiento para continuar.",
         timeout: 900000,
         endOnInvalidMessage: true,
         showSignInLink: true,
@@ -144,14 +122,11 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
     this.addDialog(oauthPrompt);
 
     this.addDialog(
-      new WaterfallDialog<Partial<WaterfallStepContextOptions<any>>>(
-        INITIAL_DIALOG_ID,
-        [
-          this._promptStep.bind(this),
-          this._dedupStep.bind(this),
-          this._dispatchStep.bind(this),
-        ]
-      )
+      new WaterfallDialog<WaterfallStepContextOptions>(INITIAL_DIALOG_ID, [
+        this._promptStep.bind(this),
+        this._dedupStep.bind(this),
+        this._dispatchStep.bind(this),
+      ])
     );
 
     this.initialDialogId = INITIAL_DIALOG_ID;
@@ -166,36 +141,67 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
    */
   public async run(
     context: TurnContext,
-    data?: WaterfallStepContextOptions<any>
+    data?: WaterfallStepContextOptions
   ): Promise<DialogTurnResult> {
-    // this._dialogStateAccessor.delete(context);
     const dialogSet = new DialogSet(this._dialogStateAccessor);
     dialogSet.add(this);
-    const dialogContext = await dialogSet.createContext(context);
-    // dialogContext.cancelAllDialogs();
 
+    const dialogContext = await dialogSet.createContext(context);
     const dialogResult = await dialogContext.continueDialog();
+
     if (dialogResult?.status === DialogTurnStatus.empty) {
       return await dialogContext.beginDialog(this.id, data);
     }
     return dialogResult;
   }
 
-  public async end(context: TurnContext): Promise<void> {
+  /**
+   * The continue method handles the incoming activity (in the form of a DialogContext) and passes it through the dialog system.
+   * If no dialog is active, no dialog will be started and an empty `DialogTurnResult` will be returned.
+   *
+   * @param {TurnContext} context The context object for this turn of the conversation
+   * @returns {Promise<DialogTurnResult>} A promise representing the result of the dialog's turn
+   */
+  public async continue(context: TurnContext): Promise<DialogTurnResult> {
     const dialogSet = new DialogSet(this._dialogStateAccessor);
     dialogSet.add(this);
+
     const dialogContext = await dialogSet.createContext(context);
-    // await this._dedupStorage.delete(this._dedupStorageKeys);
+    const dialogResult = await dialogContext.continueDialog();
+
+    if (dialogResult?.status === DialogTurnStatus.empty) {
+      return Promise.resolve({
+        status: DialogTurnStatus.empty,
+      });
+    }
+    return await dialogContext.continueDialog();
+  }
+
+  /**
+   * The stop method handles the incoming activity (in the form of a DialogContext) and ends the dialog.
+   *
+   * @param {TurnContext} context The context object for this turn of the conversation
+   * @returns {Promise<DialogTurnResult>} A promise representing the result of the dialog's turn
+   */
+  public async stop(context: TurnContext): Promise<DialogTurnResult> {
+    const dialogSet = new DialogSet(this._dialogStateAccessor);
+    dialogSet.add(this);
+
+    const dialogContext = await dialogSet.createContext(context);
+
     await this._dialogStateAccessor.delete(context);
-    await dialogContext.cancelAllDialogs();
+    return await dialogContext.cancelAllDialogs();
   }
 
   private async _promptStep(
-    stepContext: WaterfallStepContext<WaterfallStepContextOptions<any>>
+    stepContext: WaterfallStepContext<WaterfallStepContextOptions>
   ): Promise<DialogTurnResult> {
+    // Prompts the user to accept the authentication flow
+
     console.debug(
       `[${AuthCommandDispatchDialog.name}][DEBUG] [${WaterfallDialog.name}] ${this._promptStep.name}`
     );
+
     try {
       console.debug(
         `[${AuthCommandDispatchDialog.name}][DEBUG] [${WaterfallDialog.name}] ${
@@ -203,9 +209,13 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
         } options:\n${JSON.stringify(stepContext.options, null, 2)}`
       );
 
+      // Starts the OAuth prompt dialog
       await stepContext
         .beginDialog(OAUTH_PROMPT_ID)
+        // .beginDialog(TEAMS_BOT_SSO_PROMPT_ID)
         .catch((error: any): Promise<DialogTurnResult> => {
+          // Catches any errors that occur during the OAuth prompt dialog in the prompt step
+
           console.error(
             `[${AuthCommandDispatchDialog.name}][ERROR] [${
               WaterfallDialog.name
@@ -215,35 +225,62 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
               2
             )}`
           );
+
+          // Unexpected errors are logged and the bot continues to run to the next step
           return stepContext.next();
         });
+
+      // End the turn and wait for the user to accept the authentication flow
       return Dialog.EndOfTurn;
+      // return await stepContext.next();
     } catch (error: any) {
+      // Catches any errors that occur during the prompt step
+
       console.error(
         `[${AuthCommandDispatchDialog.name}][ERROR] [${WaterfallDialog.name}] ${
           this._promptStep.name
         } error:\n${JSON.stringify(error, null, 2)}`
       );
+
+      // Unexpected errors are logged and the bot continues to run
       return await stepContext.next();
     }
   }
 
   private async _dedupStep(
-    stepContext: WaterfallStepContext<WaterfallStepContextOptions<any>>
+    stepContext: WaterfallStepContext<WaterfallStepContextOptions>
   ): Promise<DialogTurnResult> {
+    // Deduplicates the token exchange request to prevent processing the same token exchange multiple times
+
+    console.debug(
+      `[${AuthCommandDispatchDialog.name}][DEBUG] [${WaterfallDialog.name}] ${this._dedupStep.name}`
+    );
+
+    // Get the token response from the previous step
     const tokenResult: Partial<TokenResponse> = stepContext.result;
+    // const tokenResult: Partial<TeamsBotSsoPromptTokenResponse> =
+    //   stepContext.result;
 
     // Only dedup after promptStep to make sure that all Teams' clients receive the login request
     if (tokenResult && (await this._shouldDedup(stepContext.context))) {
+      // If the token exchange is a duplicate, end the turn without dispatching the command handler.
+      // This is to prevent the bot from processing the same token exchange multiple times
       return Dialog.EndOfTurn;
     }
+
+    // Continue to the next step with the token response as the result
     return await stepContext.next(tokenResult);
   }
 
   private async _dispatchStep(
-    stepContext: WaterfallStepContext<WaterfallStepContextOptions<any>>
+    stepContext: WaterfallStepContext<WaterfallStepContextOptions>
   ): Promise<DialogTurnResult> {
+    // Dispatches the command handler with the token response if the token exchange was successful
+
+    // Get the token response from the previous step
     const tokenResult: Partial<TokenResponse> = stepContext.result;
+    // const tokenResult: Partial<TeamsBotSsoPromptTokenResponse> =
+    //   stepContext.result;
 
     console.debug(
       `[${AuthCommandDispatchDialog.name}][DEBUG] [${WaterfallDialog.name}] ${this._dispatchStep.name}`
@@ -259,88 +296,44 @@ export class AuthCommandDispatchDialog extends ComponentDialog {
       } tokenResult:\n${JSON.stringify(tokenResult, null, 2)}`
     );
 
-    if (tokenResult) {
-      console.debug(
-        `[${AuthCommandDispatchDialog.name}][DEBUG] [${WaterfallDialog.name}] ${
-          this._dispatchStep.name
-        } stepContext.context.activity:\n${JSON.stringify(
-          stepContext.context.activity,
-          null,
-          2
-        )}`
-      );
-
-      const command: string = stepContext.options?.command;
-      // TODO: Handle command string and dispatch to appropriate command handler requiring SSO token.
-
-      const data: Partial<AdaptiveCardActionSSORefreshData> =
-        stepContext.options?.data;
-      const graphClient = SimpleGraphClient.client(tokenResult.token);
-      const userProfile = await SimpleGraphClient.me(graphClient);
-
-      let channel: TeamChannelResponse | undefined;
-      let message: TeamChannelMessage | undefined;
-      let messageId: string | undefined;
-      if (data?.team?.aadGroupId && data?.channel?.id) {
-        channel = await SimpleGraphClient.teamChannel(
-          graphClient,
-          data.team.aadGroupId,
-          data.channel.id
-        );
-
-        if (data.conversation?.id?.indexOf(";") >= 0) {
-          messageId = data.conversation.id.split(";")[1];
-          messageId = messageId.replace("messageid=", "");
-
-          message = await SimpleGraphClient.teamChannelMessage(
-            graphClient,
-            data.team.aadGroupId,
-            data.channel.id,
-            messageId
-          );
-        }
-      }
-
-      // const userPhoto = await SimpleGraphClient.mePhoto(graphClient);
-
-      const cardJson = new ACData.Template(ticketCard).expand({
-        $root: {
-          team: data?.team ?? { id: " ", name: " " },
-          teamChoices: [],
-          channel: {
-            id: data?.channel?.id ?? " ",
-            name: channel?.displayName ?? " ",
-          },
-          channelChoices: [],
-          conversation: {
-            id: messageId || " ",
-            message: message?.subject || " ",
-          },
-          conversationChoices: [],
-          from: data
-            ? { ...data?.from, email: userProfile.mail }
-            : { id: "", name: "", profileImage: "" },
-          createdUtc: new Date().toUTCString(),
-          token: tokenResult.token,
-          showButtons: true,
-          labelCancelButton: "Cancel",
-          enableCreateButton: true
-        },
-      });
-
+    // Check if the token exchange was successful
+    if (!tokenResult) {
+      // If the token exchange was unsuccessful, end the dialog
       await stepContext.context.sendActivity(
-        MessageFactory.attachment(CardFactory.adaptiveCard(cardJson))
-      );
-
-      return await stepContext.endDialog(tokenResult);
-    } else {
-      await stepContext.context.sendActivity(
-        `Unable to log you in or the authentication flow was rejected by the user.`
+        `No se puede iniciar sesión o el usuario rechazó el flujo de autenticación.`
       );
 
       // Unable to retrieve token or an unexpected error occurred
       return await stepContext.endDialog();
     }
+
+    // Check if the command is present in the dialog options
+    const command: string = stepContext.options?.data?.command;
+
+    // Resolves command handler from text, resolution can only be a `HandlerType.Command` type handler as this dialog should only be reacheable from the `authRefresh` action
+    // and the `authRefresh` action is only triggered by a message that matched a command handler. Since the initial context has changed, due to the authentication flow
+    // steps triggering 'signin/*' invoke actions the handler needs to be resolved again here as the context switch(and subsequently any bot turn switch), jsonifies any dialog options
+    // passed to the dialog context and as such any handler passed in the options would be lost.
+    await this._handlerManager
+      .resolveAndDispatch(stepContext.context, command, {
+        hint: ContextHint.Dialog,
+        token: tokenResult.token,
+        ...stepContext.options?.data,
+      })
+      .catch((error: any) => {
+        // Catches any errors that occur during the command handling process
+
+        console.error(
+          `[${AuthCommandDispatchDialog.name}][ERROR] ${
+            this._dispatchStep.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Unexpected errors are logged and the bot continues to run
+        return;
+      });
+
+    return await stepContext.endDialog(tokenResult);
   }
 
   private _isSignInVerifyStateInvoke(context: TurnContext): boolean {

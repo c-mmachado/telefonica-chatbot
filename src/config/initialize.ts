@@ -1,22 +1,8 @@
-import {
-  ConversationState,
-  MemoryStorage,
-  TurnContext,
-  UserState,
-} from "botbuilder";
+import { MemoryStorage, TurnContext } from "botbuilder";
 import { BotBuilderCloudAdapter } from "@microsoft/teamsfx";
 import ConversationBot = BotBuilderCloudAdapter.ConversationBot;
 
-import config from "./config";
-
-// Define the state store for your bot.
-// See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
-// A bot requires a state storage system to persist the dialog and user state between messages.
-const memoryStorage = new MemoryStorage();
-
-// Create conversation and user state with the storage provider defined above.
-export const conversationState = new ConversationState(memoryStorage);
-export const userState = new UserState(memoryStorage);
+import { config } from "./config";
 
 // Create the command bot and register the command handlers for your app.
 // You can also use the commandBot.command.registerCommands to register other commands
@@ -40,10 +26,7 @@ export const commandBot = new ConversationBot({
         "Team.ReadBasic.All",
         "Channel.ReadBasic.All",
         "ProfilePhoto.Read.All",
-        "AppCatalog.ReadWrite.All",
-        "TeamsAppInstallation.ReadForUser",
-        "TeamsAppInstallation.ReadWriteForUser",
-        "TeamsAppInstallation.ReadWriteSelfForUser",
+        "Files.Read.All",
       ],
       initiateLoginEndpoint: `https://${config.botDomain}/auth-start.html`,
       authorityHost: config.authorityHost,
@@ -63,8 +46,8 @@ export const commandBot = new ConversationBot({
   },
   command: {
     enabled: false,
-    commands: [], // new HelloWorldCommandHandler()
-    ssoCommands: [], // new ProfileSsoCommandHandler(), new PhotoSsoCommandHandler()
+    commands: [],
+    ssoCommands: [],
   },
 });
 

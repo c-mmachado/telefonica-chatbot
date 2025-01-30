@@ -1,7 +1,12 @@
 import {
   AuthProviderCallback,
   Client,
+  ResponseType,
 } from "@microsoft/microsoft-graph-client";
+
+export enum ApplicationIdentityType {
+  BOT = "bot",
+}
 
 export interface MicrosoftGraphEntity {
   "@odata.context": string;
@@ -13,10 +18,10 @@ export interface MicrosoftGraphCollection<T> extends MicrosoftGraphEntity {
   value: T[];
 }
 
-export interface TeamChannelMessages
-  extends MicrosoftGraphCollection<TeamChannelMessage> {}
+export interface TeamsChannelMessages
+  extends MicrosoftGraphCollection<TeamsChannelMessage> {}
 
-export interface TeamChannelResponse extends MicrosoftGraphEntity {
+export interface TeamsChannel extends MicrosoftGraphEntity {
   id: string;
   displayName: string;
   description: string;
@@ -24,36 +29,63 @@ export interface TeamChannelResponse extends MicrosoftGraphEntity {
   isArchived: boolean;
 }
 
-export interface TeamChannelMessage extends MicrosoftGraphEntity {
+export interface TeamsChannelMessage extends MicrosoftGraphEntity {
   id: string;
   subject: string;
-  attachments: TeamChannelMessageAttachment[];
+  attachments: TeamsChannelMessageAttachment[];
   messageType: "message" | string;
   createdDateTime: Date;
   lastEditedDateTime: Date | null;
   deletedDateTime: Date | null;
-  from: TeamChannelMessageFrom;
+  from: TeamsChannelMessageFrom;
   webUrl: string;
+  body: TeamsChannelMessageBody;
+  mentions: TeamsMessageMention[];
 }
 
-export interface TeamChannelMessageFrom {
-  id: string;
-  tenantId: string;
-  displayName: string;
-  userIdentityType: string;
+export interface TeamsMessageMention {
+  id: number;
+  mentionText: string;
+  mentioned: {
+    device: any | null; // Better typing
+    user: {
+      "@odata.type": string;
+      id: string;
+      displayName: string;
+      userIdentityType: string;
+      tenantId: string;
+    } | null;
+    conversation: any | null; // Better typing
+    tag: any | null; // Better typing
+    application: {
+      "@odata.type": string;
+      id: string;
+      displayName: string;
+      applicationIdentityType: string;
+    } | null;
+  };
 }
 
-export interface TeamChannelMessageIdentity {
+export interface TeamsChannelMessageFrom {
+  user: {
+    id: string;
+    tenantId: string;
+    displayName: string;
+    userIdentityType: string;
+  };
+}
+
+export interface TeamsChannelMessageIdentity {
   teamId: string;
   channelId: string;
 }
 
-export interface TeamChannelMessageBody {
+export interface TeamsChannelMessageBody {
   content: string;
   contentType: string;
 }
 
-export interface TeamChannelMessageAttachment {
+export interface TeamsChannelMessageAttachment {
   id: string;
   content: any;
   contentType: string;
@@ -123,29 +155,29 @@ export class SimpleGraphClient {
     }
   }
 
-  public static async teamChannel(
+  public static async teamsChannel(
     graphClient: Client,
     teamAadGroupId: string,
     channelId: string
-  ): Promise<TeamChannelResponse> {
+  ): Promise<TeamsChannel> {
     return await graphClient
       .api(`/teams/${teamAadGroupId}/channels/${channelId}`)
       .get()
       .catch((error: any) => {
         console.error(
           `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamChannel.name
+            this.teamsChannel.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
       });
   }
 
-  public static async teamChannelMessage(
+  public static async teamsChannelMessage(
     graphClient: Client,
     teamAadGroupId: string,
     channelId: string,
     threadId: string
-  ): Promise<TeamChannelMessage> {
+  ): Promise<TeamsChannelMessage> {
     return await graphClient
       .api(
         `/teams/${teamAadGroupId}/channels/${channelId}/messages/${threadId}`
@@ -155,18 +187,18 @@ export class SimpleGraphClient {
       .catch((error: any) => {
         console.error(
           `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamChannelMessage.name
+            this.teamsChannelMessage.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
       });
   }
 
-  public static async teamChannelMessages(
+  public static async teamsChannelMessages(
     graphClient: Client,
     teamAadGroupId: string,
     channelId: string,
     threadId: string
-  ): Promise<TeamChannelMessages> {
+  ): Promise<TeamsChannelMessages> {
     return await graphClient
       .api(
         `/teams/${teamAadGroupId}/channels/${channelId}/messages/${threadId}/replies`
@@ -176,16 +208,16 @@ export class SimpleGraphClient {
       .catch((error: any) => {
         console.error(
           `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamChannelMessages.name
+            this.teamsChannelMessages.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
       });
   }
 
-  public static async teamChannelMessagesNext(
+  public static async teamsChannelMessagesNext(
     graphClient: Client,
     odataNextLink: string
-  ): Promise<TeamChannelMessages> {
+  ): Promise<TeamsChannelMessages> {
     return await graphClient
       .api(odataNextLink)
       .version("beta")
@@ -193,10 +225,35 @@ export class SimpleGraphClient {
       .catch((error: any) => {
         console.error(
           `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamChannelMessages.name
+            this.teamsChannelMessagesNext.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
       });
+  }
+
+  public static async downloadFile(
+    graphClient: Client,
+    url: string
+  ): Promise<ArrayBuffer> {
+    const buffer = graphClient
+      .api(url)
+      .responseType(ResponseType.ARRAYBUFFER)
+      .get();
+
+    const buffer2 = await fetch(url).then((res: Response) => res.arrayBuffer());
+
+    console.debug(
+      `[${SimpleGraphClient.name}][DEBUG] [${
+        this.downloadFile.name
+      }] buffer:\n${JSON.stringify(buffer, null, 2)}`
+    );
+
+    console.debug(
+      `[${SimpleGraphClient.name}][DEBUG] [${
+        this.downloadFile.name
+      }] buffer2:\n${JSON.stringify(buffer2, null, 2)}`
+    );
+    return buffer;
   }
 }
 

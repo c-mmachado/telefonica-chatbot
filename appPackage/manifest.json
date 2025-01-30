@@ -18,8 +18,8 @@
         "full": "Ticket Bot"
     },
     "description": {
-        "short": "short description for sso-command-bot",
-        "full": "full description for sso-command-bot"
+        "short": "short description for ticket-bot${{APP_NAME_SUFFIX}}",
+        "full": "full description for ticket-bot${{APP_NAME_SUFFIX}}"
     },
     "accentColor": "#FFFFFF",
     "bots": [
@@ -30,7 +30,7 @@
                 "team",
                 "groupChat"
             ],
-            "supportsFiles": false,
+            "supportsFiles": true,
             "isNotificationOnly": false,
             "supportsCalling": false,
             "supportsVideo": false,

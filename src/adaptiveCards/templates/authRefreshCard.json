@@ -6,13 +6,13 @@
         "action": {
             "fallback": "drop",
             "type": "Action.Execute",
-            "verb": "refresh",
+            "verb": "authRefresh",
             "data": {
                 "team": "${team}",
                 "channel": "${channel}",
                 "conversation": "${conversation}",
                 "from": "${from}",
-                "command": "/ticket"
+                "command": "${command}"
             }
         },
         "userIds": [
@@ -22,13 +22,13 @@
     "body": [
         {
             "type": "TextBlock",
-            "text": "Preparing to create a new ticket...",
+            "text": "Preparándose para crear un nuevo ticket...",
             "wrap": true
         },
         {
             "type": "TextBlock",
             "spacing": "None",
-            "text": "Please wait a few moments while the bot prepares the ticket form.",
+            "text": "Espere unos momentos mientras el bot prepara el formulario de ticket.",
             "isSubtle": true,
             "wrap": true
         }
