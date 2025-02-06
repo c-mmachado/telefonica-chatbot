@@ -1,8 +1,12 @@
+import { AccessToken, ClientSecretCredential } from "@azure/identity";
 import {
   AuthProviderCallback,
   Client,
   ResponseType,
 } from "@microsoft/microsoft-graph-client";
+import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
+
+import { BotConfiguration } from "../config/config";
 
 export enum ApplicationIdentityType {
   BOT = "bot",
@@ -94,6 +98,43 @@ export interface TeamsChannelMessageAttachment {
   teamsAppId: string;
   thumbnailUrl: string;
 }
+
+export class MicrosoftGraphUtils {
+  public static async getAccessToken(
+    config: BotConfiguration
+  ): Promise<AccessToken> {
+    return new ClientSecretCredential(
+      config.tenantId,
+      config.clientId,
+      config.clientId
+    ).getToken("https://graph.microsoft.com/.default");
+  }
+}
+
+export const DELETED_MESSAGE: TeamsChannelMessage = {
+  "@odata.context": "",
+  id: "-1",
+  subject: "La mensaje ha sido eliminada",
+  attachments: [],
+  body: {
+    content: "La mensaje ha sido eliminada",
+    contentType: "text/plain",
+  },
+  from: {
+    user: {
+      displayName: "La mensaje ha sido eliminada",
+      id: "-1",
+      tenantId: "-1",
+      userIdentityType: undefined,
+    },
+  },
+  createdDateTime: new Date(),
+  deletedDateTime: new Date(),
+  lastEditedDateTime: new Date(),
+  mentions: [],
+  messageType: "message",
+  webUrl: "",
+};
 
 /**
  * This class is a wrapper for the Microsoft Graph API.

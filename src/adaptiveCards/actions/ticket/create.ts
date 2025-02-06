@@ -11,6 +11,7 @@ import * as ACData from "adaptivecards-templating";
 import { ActionHandler, HandlerTurnContext } from "../../../commands/handler";
 import {
   ApplicationIdentityType,
+  DELETED_MESSAGE,
   SimpleGraphClient,
   TeamsChannelMessage,
 } from "../../../utils/graphClient";
@@ -18,6 +19,7 @@ import { APIClient, Queue, Ticket } from "../../../utils/apiClient";
 import { BotConfiguration } from "../../../config/config";
 
 import ticketCard from "../../../adaptiveCards/templates/ticketCard.json";
+import { LogsRepository } from "../../../repositories/logs";
 
 type AdaptiveCardActionCreateTicketData = {
   command: string;
@@ -54,7 +56,8 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
 
   constructor(
     private readonly _config: BotConfiguration,
-    private readonly _apiClient: APIClient
+    private readonly _apiClient: APIClient,
+    private readonly _repository: LogsRepository
   ) {}
 
   public async run(
@@ -109,12 +112,23 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
     await handlerContext.context.updateActivity(message);
 
     const graphClient = SimpleGraphClient.client(actionData.token);
-    const initialMessage = await SimpleGraphClient.teamsChannelMessage(
-      graphClient,
-      actionData.team.aadGroupId,
-      actionData.channel.id,
-      actionData.conversation.id
-    );
+    let initialMessage: TeamsChannelMessage =
+      await SimpleGraphClient.teamsChannelMessage(
+        graphClient,
+        actionData.team.aadGroupId,
+        actionData.channel.id,
+        actionData.conversation.id
+      ).catch((error: any): Promise<TeamsChannelMessage> => {
+        console.error(
+          `[${TicketAdaptiveCardCreateActionHandler.name}][ERROR] ${
+            this.run.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        return null;
+      });
+
+    initialMessage = initialMessage ?? DELETED_MESSAGE;
     const threadMessages = await SimpleGraphClient.teamsChannelMessages(
       graphClient,
       actionData.team.aadGroupId,
@@ -177,6 +191,16 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
       } ticket:\n${JSON.stringify(ticket, null, 2)}`
     );
 
+    this._repository.createLog(
+      JSON.stringify(
+        {
+          ...actionData,
+          token: undefined,
+          threadMessages,
+        },
+      )
+    );
+
     for (const message of threadMessages.value) {
       if (!message.body?.content?.trim() || !message.from?.user) {
         continue;
@@ -201,7 +225,12 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
         }
       }
 
-      await this._apiClient.addTicketComment(graphClient, actionData.token, ticket, message);
+      await this._apiClient.addTicketComment(
+        graphClient,
+        actionData.token,
+        ticket,
+        message
+      );
     }
 
     return await handlerContext.context.sendActivity(

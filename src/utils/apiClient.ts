@@ -1,8 +1,7 @@
 import { Client } from "@microsoft/microsoft-graph-client";
 
 import { BotConfiguration } from "../config/config";
-import { SimpleGraphClient, TeamsChannelMessage } from "./graphClient";
-import { AppInstallUtils } from "./appInstall";
+import { TeamsChannelMessage } from "./graphClient";
 
 type Required<T, U extends keyof T> = T & { [key in U]-?: T[key] };
 
@@ -93,16 +92,19 @@ export interface Ticket {
 }
 
 export class APIClient {
-  private _cookie: string;
+  private _cookie: string | null;
 
   constructor(private readonly _config: BotConfiguration) {}
 
-  public async login(): Promise<any> {
+  public async login(): Promise<string | null> {
+    // Logs into the API and returns the cookie to be used in subsequent requests
+
     console.debug(
       `[${APIClient.name}][DEBUG] ${this.login.name} endpoint: ${this._config.apiEndpoint}`
     );
 
-    const cookie = await fetch(`${this._config.apiEndpoint}`, {
+    // Fetch the cookie from the API using the supplied credentials
+    const cookie: string | null = await fetch(`${this._config.apiEndpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -144,24 +146,36 @@ export class APIClient {
         //     );
         //   }
 
+        // Gets the Set-Cookie header from the response
         const setCookies = response.headers.getSetCookie();
         if (setCookies) {
+          // If the Set-Cookie header is found, return the first cookie in the header (There can be multiple Set-Cookie headers)
           return setCookies[0];
         }
-        return null;
+
+        // If the Set-Cookie header is not found, throw an error to be caught by the catch block below
+        throw new Error("El header Set-Cookie no fue encontrado.");
       })
-      .catch((error: any) => {
+      .catch((error: Error) => {
+        // Catches any errors that occur during the login process
+
         console.error(
           `[${APIClient.name}][ERROR] ${
             this.login.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
+
+        // Returns the error as the promise's result to be handled by the caller
+        return null;
       });
+
+    // Returns the result of the login process to the caller
     return cookie;
   }
 
   public async get<T>(url: string): Promise<T> {
     if (!this._cookie) {
+      // If the cookie is not set, login to the API and set the cookie
       this._cookie = await this.login();
     }
 
@@ -169,6 +183,7 @@ export class APIClient {
       `[${APIClient.name}][DEBUG] ${this.get.name} endpoint: ${url}`
     );
 
+    // Fetch the data from the API as a GET request
     return fetch(url, {
       method: "GET",
       headers: {
@@ -176,6 +191,7 @@ export class APIClient {
         Accept: "application/json",
       },
     }).then((response: Response): Promise<T> => {
+      // Return the JSON response from the API
       return response?.json();
     });
   }
@@ -184,22 +200,26 @@ export class APIClient {
     page: PagedCollection<T>
   ): Promise<PagedCollection<T> | null> {
     if (!this._cookie) {
+      // If the cookie is not set, login to the API and set the cookie
       this._cookie = await this.login();
+    }
+
+    if (!page.next_page) {
+      // If the next page is not found, return null
+      return null;
     }
 
     console.debug(
       `[${APIClient.name}][DEBUG] ${this.next.name} endpoint: ${page.next_page}`
     );
 
-    if (!page.next_page) {
-      return null;
-    }
-
+    // Fetch the next page of the collection
     return this.get<PagedCollection<T>>(page.next_page);
   }
 
   public async queues(): Promise<Queues> {
     if (!this._cookie) {
+      // If the cookie is not set, login to the API and set the cookie
       this._cookie = await this.login();
     }
 
@@ -207,6 +227,7 @@ export class APIClient {
       `[${APIClient.name}][DEBUG] ${this.queues.name} endpoint: ${this._config.apiEndpoint}/REST/2.0/queues/all}`
     );
 
+    // Fetch the queues
     return this.get<Queues>(`${this._config.apiEndpoint}/REST/2.0/queues/all`);
   }
 
@@ -259,6 +280,7 @@ export class APIClient {
       }`}`
     );
 
+    // Create the ticket using the supplied queue and subject
     const createTicket: CreateTicket = await fetch(
       `${
         queue._hyperlinks.find((v: RefHyperlinkEntity) => v.ref === "create")
@@ -346,9 +368,7 @@ export class APIClient {
       }`
     );
 
-    // const botToken = await AppInstallUtils.getAccessToken(
-    //   this._config.tenantId
-    // );
+    // const botToken = await MicrosoftGraphUtils.getAccessToken(this._config);
 
     const attachments = [];
     if (message.attachments?.length > 0) {
@@ -360,9 +380,9 @@ export class APIClient {
         // const buffer = await fetch(attachment.contentUrl, {
         //   method: "GET",
         //   headers: {
-        //     Authorization: `${botToken.token_type} ${botToken.access_token}`,
+        //     Authorization: `${botToken.tokenType} ${botToken.token}`,
         //   },
-        // }).then((res: Response) => {
+        // }).then((res: Response): Promise<ArrayBuffer> => {
         //   return res.arrayBuffer();
         // });
 

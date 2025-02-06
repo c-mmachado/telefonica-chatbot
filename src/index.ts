@@ -4,13 +4,12 @@ import {
   TurnContext,
   UserState,
 } from "botbuilder";
-import express, { Response, Request } from "express";
+import express, { Response, Request, Router } from "express";
+
+import "isomorphic-fetch";
 // import path from "path";
 // import send from "send";
-import "isomorphic-fetch";
-import * as mssql from "mssql";
 
-import { commandBot } from "./config/initialize";
 import { TeamsBot } from "./bots/teamsBot";
 import {
   ConversationReferenceStore,
@@ -19,12 +18,18 @@ import {
   HandlerManager,
 } from "./commands/handlerManager";
 import { TicketCommandHandler } from "./commands/ticket/ticket";
-import { config } from "./config/config";
-import { APIClient } from "./utils/apiClient";
 import { AuthCommandDispatchDialog } from "./dialogs/authCommandDispatchDialog";
 import { AuthRefreshActionHandler } from "./adaptiveCards/actions/authRefresh/authRefresh";
 import { TicketAdaptiveCardCreateActionHandler } from "./adaptiveCards/actions/ticket/create";
 import { TicketAdaptiveCardCancelActionHandler } from "./adaptiveCards/actions/ticket/cancel";
+import { commandBot } from "./config/initialize";
+import { config } from "./config/config";
+import { apiClient } from "./api/ticket";
+
+import { router as techiniciansRouter } from "./api/technicians";
+import { router as apiLogs } from "./api/logs";
+import { router as dbRouter } from "./api/db";
+import { repository as logsRepository } from "./api/logs";
 
 // Define the state store for your bot.
 // See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
@@ -40,9 +45,6 @@ export const userState: UserState = new UserState(memoryStorage);
 // Define a simple conversation reference store
 const conversationStore: ConversationReferenceStore = {};
 
-// Create the API client to the ticketing API
-const apiClient: APIClient = new APIClient(config);
-
 // Create the context manager
 const contextManager: HandlerContextManager = new HandlerContextManager(
   config,
@@ -56,7 +58,11 @@ const handlerManager: HandlerManager = new DefaultHandlerManager(
     commands: [new TicketCommandHandler(apiClient)],
     actions: [
       new AuthRefreshActionHandler(),
-      new TicketAdaptiveCardCreateActionHandler(config, apiClient),
+      new TicketAdaptiveCardCreateActionHandler(
+        config,
+        apiClient,
+        logsRepository
+      ),
       new TicketAdaptiveCardCancelActionHandler(),
     ],
   }
@@ -73,19 +79,6 @@ const dialog: AuthCommandDispatchDialog = new AuthCommandDispatchDialog(
 // Register the dialog with the context manager
 contextManager.registerDialog(dialog);
 
-// Create databse connection
-const dbConnection: mssql.ConnectionPool = new mssql.ConnectionPool({
-  server: config.dbHost,
-  port: config.dbPort,
-  user: config.dbUser,
-  password: config.dbPassword,
-  database: config.dbName,
-  options: {
-    encrypt: false,
-    enableArithAbort: true,
-  },
-});
-
 // Create the activity handler.
 const bot: TeamsBot = new TeamsBot(
   config,
@@ -95,29 +88,22 @@ const bot: TeamsBot = new TeamsBot(
   dialog
 );
 
-// const tmp = async () => {
-//   const api = new APIClient(config);
-//   const cookie = await api.login();
-//   console.debug(`[index][DEBUG] login: ${JSON.stringify(cookie, null, 2)}`);
-
-//   const queues = await api.queues(cookie);
-//   console.debug(`[index][DEBUG] queues: ${JSON.stringify(queues, null, 2)}`);
-// };
-// tmp();
-
 // Create express application.
-const expressApp = express();
-expressApp.use(express.json());
+const app = express();
+app.use(express.json());
 
-const server = expressApp.listen(
-  process.env.port || process.env.PORT || 3978,
-  () => {
-    console.log(
-      `[expressApp][INFO] Bot started, ${expressApp.name} listening to`,
-      server.address()
-    );
-  }
-);
+const apiRouter: Router = Router();
+app.use("/api", apiRouter);
+apiRouter.use("/db", dbRouter);
+apiRouter.use("/technicians", techiniciansRouter);
+apiRouter.use("/logs", apiLogs);
+
+const server = app.listen(process.env.port || process.env.PORT || 3978, () => {
+  console.log(
+    `[expressApp][INFO] Bot started, ${app.name} listening to`,
+    server.address()
+  );
+});
 
 // Register an API endpoint with `express`. Teams sends messages to your application
 // through this endpoint.
@@ -126,46 +112,50 @@ const server = expressApp.listen(
 // Bot Framework endpoint. If you customize this route, update the Bot registration
 // in `infra/botRegistration/azurebot.bicep`.
 // Process Teams activity with Bot Framework.
-expressApp.post("/api/messages", async (req: Request, res: Response) => {
-  await commandBot
-    .requestHandler(req, res, async (context: TurnContext): Promise<any> => {
-      console.debug(`[expressApp][DEBUG] [${req.method}] req.url: ${req.url}`);
-      console.debug(
-        `[expressApp][DEBUG] [${req.method}] req.headers:\n${JSON.stringify(
-          req.headers,
-          null,
-          2
-        )}`
-      );
-      return await bot.run(context);
-    })
-    .catch((err: any) => {
-      console.error(
-        `[expressApp][ERROR] [${req.method}] error:\n${JSON.stringify(
-          err,
-          null,
-          2
-        )}`
-      );
+apiRouter.post(
+  "/messages",
+  async (req: Request, res: Response): Promise<void> => {
+    await commandBot
+      .requestHandler(req, res, async (context: TurnContext): Promise<any> => {
+        console.debug(
+          `[${req.method} ${req.url}][DEBUG] req.headers:\n${JSON.stringify(
+            req.headers,
+            null,
+            2
+          )}`
+        );
+        return await bot.run(context);
+      })
+      .catch((err: any) => {
+        // Catches any errors that occur during the request
 
-      // Error message including "412" means it is waiting for user's consent, which is a normal process of SSO, shouldn't throw this error.
-      if (!err.message.includes("412")) {
-        throw err;
-      }
-    });
-});
+        console.error(
+          `[${req.method} ${req.url}][ERROR] error:\n${JSON.stringify(
+            err,
+            null,
+            2
+          )}`
+        );
 
-// Health check endpoint for the express app to verify that the app is running.
-expressApp.get("/health", async (req: Request, res: Response) => {
-  console.debug(`[expressApp][DEBUG] [${req.method}] req.url: ${req.url}`);
+        if (!err.message.includes("412")) {
+          // Error message including "412" means it is waiting for user's consent, which is a normal process of SSO, shouldn't throw this error
+          throw err;
+        }
+      });
+  }
+);
+
+// Health check endpoint for the express app to verify that the app is running
+apiRouter.get("/health", async (req: Request, res: Response): Promise<void> => {
   console.debug(
-    `[expressApp][DEBUG] [${req.method}] req.headers:\n${JSON.stringify(
+    `[${req.method} ${req.url}][DEBUG] req.headers:\n${JSON.stringify(
       req.headers,
       null,
       2
     )}`
   );
 
+  // Return a 200 status code to indicate that the bot is running
   res
     .status(200)
     .send(
@@ -175,96 +165,6 @@ expressApp.get("/health", async (req: Request, res: Response) => {
         2
       )
     );
-});
-
-// Database health check endpoint to verify that the database is running.
-expressApp.get("/db/health", async (req: Request, res: Response) => {
-  console.debug(`[expressApp][DEBUG] [${req.method}] req.url: ${req.url}`);
-  console.debug(
-    `[expressApp][DEBUG] [${req.method}] req.headers:\n${JSON.stringify(
-      req.headers,
-      null,
-      2
-    )}`
-  );
-
-  try {
-    await dbConnection.connect();
-
-    console.debug(`[expressApp][DEBUG] [${req.method}] Connected to database`);
-
-    res.status(200).send(
-      JSON.stringify(
-        {
-          status: 200,
-          data: { message: "Database connection successful" },
-        },
-        null,
-        2
-      )
-    );
-  } catch (error: any) {
-    console.error(
-      `[expressApp][ERROR] [${req.method}] error:\n${JSON.stringify(
-        error,
-        null,
-        2
-      )}`
-    );
-
-    res.status(500).send(
-      JSON.stringify(
-        {
-          data: { status: 500, message: "Database connection failed", error },
-        },
-        null,
-        2
-      )
-    );
-  }
-});
-
-// Ticketing API health check endpoint to verify that we can connect to the ticketing API.
-expressApp.get("/api/health", async (req: Request, res: Response) => {
-  console.debug(`[expressApp][DEBUG] [${req.method}] req.url: ${req.url}`);
-  console.debug(
-    `[expressApp][DEBUG] [${req.method}] req.headers:\n${JSON.stringify(
-      req.headers,
-      null,
-      2
-    )}`
-  );
-
-  const cookie = await apiClient.login();
-  if (cookie) {
-    console.debug(
-      `[expressApp][DEBUG] [${req.method}] cookie:\n${JSON.stringify(
-        cookie,
-        null,
-        2
-      )}`
-    );
-    res.status(200).send(
-      JSON.stringify(
-        {
-          status: 200,
-          data: { cookie, message: "API connection successful" },
-        },
-        null,
-        2
-      )
-    );
-  } else {
-    res
-      .status(500)
-      .send(
-        JSON.stringify(
-          { status: 500, data: { message: "API connection failed" } },
-          null,
-          2
-        )
-      );
-  }
 });
 
 // Allow the auth-start.html and auth-end.html to be served from the public folder.

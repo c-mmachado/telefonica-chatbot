@@ -205,6 +205,6 @@ export class TicketCommandHandler extends CommandHandler {
     // Return the queue choices array
     return queueChoices.length > 0
       ? queueChoices
-      : [{ title: "test Queue", value: "0" }]; // TODO: Remove
+      : [{ title: "Test", value: "0" }]; // TODO: Remove
   }
 }
