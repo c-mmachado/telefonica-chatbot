@@ -22,14 +22,22 @@ import { AuthCommandDispatchDialog } from "./dialogs/authCommandDispatchDialog";
 import { AuthRefreshActionHandler } from "./adaptiveCards/actions/authRefresh/authRefresh";
 import { TicketAdaptiveCardCreateActionHandler } from "./adaptiveCards/actions/ticket/create";
 import { TicketAdaptiveCardCancelActionHandler } from "./adaptiveCards/actions/ticket/cancel";
+import { DefaultMicrosoftGraphClient } from "./utils/graphClient";
+
 import { commandBot } from "./config/initialize";
 import { config } from "./config/config";
-import { apiClient } from "./api/ticket";
+import { apiClient } from "./config/ticket";
+import { logsRepository, techRepository } from "./config/db";
 
 import { router as techiniciansRouter } from "./api/technicians";
 import { router as apiLogs } from "./api/logs";
 import { router as dbRouter } from "./api/db";
-import { repository as logsRepository } from "./api/logs";
+
+// Create the graph client
+const graphClient = new DefaultMicrosoftGraphClient(config, {
+  username: "bot@carlosmachado1964.onmicrosoft.com",
+  password: "Mercurio123",
+});
 
 // Define the state store for your bot.
 // See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
@@ -55,15 +63,16 @@ const contextManager: HandlerContextManager = new HandlerContextManager(
 const handlerManager: HandlerManager = new DefaultHandlerManager(
   contextManager,
   {
-    commands: [new TicketCommandHandler(apiClient)],
+    commands: [new TicketCommandHandler(apiClient, graphClient)],
     actions: [
       new AuthRefreshActionHandler(),
       new TicketAdaptiveCardCreateActionHandler(
         config,
         apiClient,
+        graphClient,
         logsRepository
       ),
-      new TicketAdaptiveCardCancelActionHandler(),
+      new TicketAdaptiveCardCancelActionHandler(graphClient),
     ],
   }
 );
@@ -85,7 +94,8 @@ const bot: TeamsBot = new TeamsBot(
   conversationState,
   userState,
   handlerManager,
-  dialog
+  dialog,
+  techRepository
 );
 
 // Create express application.

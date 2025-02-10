@@ -1,4 +1,4 @@
-import { ConnectionPool } from "mssql";
+import { ConnectionPool, IResult } from "mssql";
 
 export declare interface APILog {
   id: number;
@@ -9,74 +9,84 @@ export declare interface APILog {
 export class LogsRepository {
   constructor(private readonly _db: ConnectionPool) {}
 
+  private async _connect(): Promise<void> {
+    await this._db.connect().catch((error: Error) => {
+      console.error(
+        `[${LogsRepository.name}][ERROR] ${
+          this._connect.name
+        } error:\n${JSON.stringify(error, null, 2)}`
+      );
+    });
+  }
+
   public async logs(): Promise<APILog[]> {
     if (!this._db.connected) {
       // If the connection is not open, open it
-      await this._db.connect();
+      await this._connect();
     }
 
-    try {
-      console.debug(
-        `[${LogsRepository.name}][DEBUG] [${this.logs.name}] Fetching api logs...`
-      );
+    console.debug(
+      `[${LogsRepository.name}][DEBUG] ${this.logs.name} Fetching API logs`
+    );
 
-      // Perform the query to get the api logs from the database
-      const result = await this._db.query<
-        APILog[]
-      >`SELECT * FROM dbo.logschatbot`;
+    // Perform the query to get the API logs from the database
+    return await this._db.query<APILog[]>`SELECT * FROM dbo.logschatbot`
+      .then((result: IResult<APILog>): APILog[] => {
+        // Parse the results of the query to an APILog array
 
-      // Return the result
-      if (result?.recordset) {
-        return result.recordset.map((r: APILog) => {
-          return {
-            id: r.id,
-            fecha: new Date(r.fecha),
-            txt: JSON.parse(r.txt),
-          };
-        });
-      }
-      return [];
-    } catch (error: any) {
-      // Catches any errors that occur during the technicians query
+        if (result?.recordset?.length > 0) {
+          // If the query returns results, map the results to the APILog type
+          return result.recordset.map((r: APILog) => {
+            return {
+              id: r.id,
+              fecha: new Date(r.fecha),
+              txt: JSON.parse(r.txt),
+            };
+          });
+        }
 
-      console.error(
-        `[${LogsRepository.name}][ERROR] [${
-          this.logs.name
-        }] error:\n${JSON.stringify(error, null, 2)}`
-      );
+        // If the query returns no results, return an empty array
+        return [];
+      })
+      .catch((error: Error) => {
+        // Catches any errors that occur during the API logs query
 
-      // Rethrows the error to the caller
-      throw error;
-    }
+        console.error(
+          `[${LogsRepository.name}][ERROR] ${
+            this.logs.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return an empty array if an error occurs
+        return [];
+      });
   }
 
-  public async createLog(message: string): Promise<any> {
+  public async createLog(message: string): Promise<void> {
     if (!this._db.connected) {
       // If the connection is not open, open it
-      await this._db.connect();
+      await this._connect();
     }
 
-    try {
-      console.debug(
-        `[${LogsRepository.name}][DEBUG] [${this.createLog.name}] Creating log with message: ${message}`
-      );
+    console.debug(
+      `[${LogsRepository.name}][DEBUG] ${this.createLog.name} Creating API log with message: ${message}`
+    );
 
-      // Perform the query to create the api log in the database
-      const result = await this._db
-        .query<any>`INSERT INTO dbo.logschatbot (txt) VALUES (${message})`;
+    // Perform the query to create the API log in the database
+    await this._db
+      .query<any>`INSERT INTO dbo.logschatbot (txt) VALUES (${message})`.catch(
+      (error: Error) => {
+        // Catches any errors that occur during the API logs query
 
-      return result;
-    } catch (error: any) {
-      // Catches any errors that occur during the api log creation query
+        console.error(
+          `[${LogsRepository.name}][ERROR] ${
+            this.logs.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
 
-      console.error(
-        `[${LogsRepository.name}][ERROR] [${
-          this.logs.name
-        }] error:\n${JSON.stringify(error, null, 2)}`
-      );
-
-      // Rethrows the error to the caller
-      throw error;
-    }
+        // Return an empty array if an error occurs
+        return [];
+      }
+    );
   }
 }

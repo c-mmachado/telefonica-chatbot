@@ -23,6 +23,7 @@ export declare interface BotConfiguration {
   clientId: string;
   tenantId: string;
   clientSecret: string;
+  authority: string;
   authorityHost: string;
 
   teamsAppId: string;
@@ -52,6 +53,7 @@ export const config: BotConfiguration = {
   clientId: process.env.AAD_APP_CLIENT_ID,
   tenantId: process.env.AAD_APP_TENANT_ID,
   clientSecret: process.env.AAD_APP_CLIENT_SECRET,
+  authority: process.env.AAD_APP_OAUTH_AUTHORITY,
   authorityHost: process.env.AAD_APP_OAUTH_AUTHORITY_HOST,
 
   // Teams app settings

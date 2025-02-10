@@ -9,9 +9,11 @@ import {
   HandlerTurnContext,
 } from "../handler";
 import {
-  SimpleGraphClient,
-  TeamsChannelMessage,
-  TeamsChannel,
+  DefaultMicrosoftGraphClient,
+  TeamChannelMessage,
+  TeamChannel,
+  DELETED_MESSAGE,
+  MicrosoftGraphClient,
 } from "../../utils/graphClient";
 import {
   APIClient,
@@ -26,24 +28,25 @@ export class TicketCommandHandler extends CommandHandler {
   public pattern: TriggerPatterns = "/ticket";
   public needsAuth: boolean = true;
 
-  constructor(private readonly _apiClient: APIClient) {
+  constructor(
+    private readonly _apiClient: APIClient,
+    private readonly _graphClient: MicrosoftGraphClient
+  ) {
     super();
   }
 
   public async doRun(
-    ctx: HandlerTurnContext,
+    handlerContext: HandlerTurnContext,
     commandMessage: CommandMessage,
     data?: AuthHandlerData
   ): Promise<any> {
-    const graphClient = SimpleGraphClient.client(data.token);
-    const userProfile = await SimpleGraphClient.me(graphClient);
+    const userProfile = await this._graphClient.me();
 
-    let channel: TeamsChannel | undefined;
-    let message: TeamsChannelMessage | undefined;
+    let channel: TeamChannel | undefined;
+    let message: TeamChannelMessage | undefined;
     let messageId: string | undefined;
     if (data?.team?.aadGroupId && data?.channel?.id) {
-      channel = await SimpleGraphClient.teamsChannel(
-        graphClient,
+      channel = await this._graphClient.teamChannel(
         data.team.aadGroupId,
         data.channel.id
       );
@@ -52,12 +55,12 @@ export class TicketCommandHandler extends CommandHandler {
         messageId = data.conversation.id.split(";")[1];
         messageId = messageId.replace("messageid=", "");
 
-        message = await SimpleGraphClient.teamsChannelMessage(
-          graphClient,
-          data.team.aadGroupId,
-          data.channel.id,
-          messageId
-        );
+        message =
+          (await this._graphClient.teamChannelMessage(
+            data.team.aadGroupId,
+            data.channel.id,
+            messageId
+          )) ?? DELETED_MESSAGE;
       }
     }
 
@@ -112,6 +115,7 @@ export class TicketCommandHandler extends CommandHandler {
             },
             cancel: {
               label: "Cancelar",
+              tooltip: "Cancela la creación de la incidencia",
               enabled: true,
             },
           },
@@ -120,7 +124,7 @@ export class TicketCommandHandler extends CommandHandler {
     });
 
     // Sends the adaptive card
-    await ctx.context.sendActivity(
+    await handlerContext.context.sendActivity(
       MessageFactory.attachment(CardFactory.adaptiveCard(cardJson))
     );
   }

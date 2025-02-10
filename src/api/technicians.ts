@@ -1,10 +1,8 @@
 import { NextFunction, Router, Response, Request } from "express";
 
-import { TechnicianRepository } from "../repositories/technicians";
-import { dbConnection } from "../config/db";
+import { techRepository as repository } from "../config/db";
 
 export const router = Router();
-const repository: TechnicianRepository = new TechnicianRepository(dbConnection);
 
 router.get(
   "/",
@@ -97,11 +95,9 @@ router.post(
   "/",
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.debug(
-      `[techniciansRouter][DEBUG] [${req.method} ${req.url}] req.headers:\n${JSON.stringify(
-        req.headers,
-        null,
-        2
-      )}`
+      `[techniciansRouter][DEBUG] [${req.method} ${
+        req.url
+      }] req.headers:\n${JSON.stringify(req.headers, null, 2)}`
     );
 
     try {
@@ -131,11 +127,9 @@ router.post(
       // Catches any errors that occur during the technician creation query
 
       console.error(
-        `[techniciansRouter][ERROR] [${req.method} ${req.url}] error:\n${JSON.stringify(
-          error,
-          null,
-          2
-        )}`
+        `[techniciansRouter][ERROR] [${req.method} ${
+          req.url
+        }] error:\n${JSON.stringify(error, null, 2)}`
       );
 
       // Send a 500 error to the client with the error
@@ -159,11 +153,9 @@ router.put(
   "/:id",
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.debug(
-      `[techniciansRouter][DEBUG] [${req.method} ${req.url}] req.headers:\n${JSON.stringify(
-        req.headers,
-        null,
-        2
-      )}`
+      `[techniciansRouter][DEBUG] [${req.method} ${
+        req.url
+      }] req.headers:\n${JSON.stringify(req.headers, null, 2)}`
     );
 
     try {
@@ -214,11 +206,9 @@ router.put(
       // Catches any errors that occur during the technician update query
 
       console.error(
-        `[techniciansRouter][ERROR] [${req.method} ${req.url}] error:\n${JSON.stringify(
-          error,
-          null,
-          2
-        )}`
+        `[techniciansRouter][ERROR] [${req.method} ${
+          req.url
+        }] error:\n${JSON.stringify(error, null, 2)}`
       );
 
       // Send a 500 error to the client with the error
@@ -242,11 +232,9 @@ router.delete(
   "/:id",
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.debug(
-      `[techniciansRouter][DEBUG] [${req.method} ${req.url}] req.headers:\n${JSON.stringify(
-        req.headers,
-        null,
-        2
-      )}`
+      `[techniciansRouter][DEBUG] [${req.method} ${
+        req.url
+      }] req.headers:\n${JSON.stringify(req.headers, null, 2)}`
     );
 
     try {
@@ -293,11 +281,9 @@ router.delete(
       // Catches any errors that occur during the technician deletion query
 
       console.error(
-        `[techniciansRouter][ERROR] [${req.method} ${req.url}] error:\n${JSON.stringify(
-          error,
-          null,
-          2
-        )}`
+        `[techniciansRouter][ERROR] [${req.method} ${
+          req.url
+        }] error:\n${JSON.stringify(error, null, 2)}`
       );
 
       // Send a 500 error to the client with the error

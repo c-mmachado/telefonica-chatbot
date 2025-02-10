@@ -251,8 +251,19 @@
                             "isEnabled": "${gui.buttons.cancel.enabled}",
                             "id": "cancelTicketAction",
                             "associatedInputs": "None",
-                            "tooltip": "Cancela la creacion de la incidencia",
-                            "style": "destructive"
+                            "tooltip": "${gui.buttons.cancel.tooltip}",
+                            "style": "destructive",
+                            "data": {
+                                "command": "${command}",
+                                "team": "${team}",
+                                "channel": "${channel}",
+                                "conversation": "${conversation}",
+                                "from": "${from}",
+                                "ticket": "${ticket}",
+                                "token": "${token}",
+                                "createdUtc": "${createdUtc}",
+                                "gui": "${gui}"
+                            }
                         }
                     ]
                 }

@@ -1,9 +1,10 @@
-import { Client } from "@microsoft/microsoft-graph-client";
-
 import { BotConfiguration } from "../config/config";
-import { TeamsChannelMessage } from "./graphClient";
-
-type Required<T, U extends keyof T> = T & { [key in U]-?: T[key] };
+import {
+  DefaultMicrosoftGraphClient,
+  MicrosoftGraphClient,
+  TeamChannelMessage,
+} from "./graphClient";
+import { Required } from "./types";
 
 export type HyperlinkEntity = Partial<{
   _url: string;
@@ -165,7 +166,7 @@ export class APIClient {
           } error:\n${JSON.stringify(error, null, 2)}`
         );
 
-        // Returns the error as the promise's result to be handled by the caller
+        // Returns null if an error occurs
         return null;
       });
 
@@ -347,11 +348,10 @@ export class APIClient {
   }
 
   public async addTicketComment(
-    graphClient: Client,
-    token: string,
+    graphClient: MicrosoftGraphClient,
     ticket: Partial<Ticket>,
-    message: TeamsChannelMessage
-  ): Promise<any> {
+    message: TeamChannelMessage
+  ): Promise<string[]> {
     if (!this._cookie) {
       this._cookie = await this.login();
     }
@@ -426,7 +426,7 @@ export class APIClient {
           Attachments: attachments,
         }),
       }
-    ).then((response: Response): Promise<any> => {
+    ).then((response: Response): Promise<string[]> => {
       return response?.json();
     });
 
@@ -439,7 +439,7 @@ export class APIClient {
     return createComment;
   }
 
-  public async ticketHistory(ticket: Ticket): Promise<TicketHistory> {
+  public async ticketHistory(ticket: Partial<Ticket>): Promise<TicketHistory> {
     if (!this._cookie) {
       this._cookie = await this.login();
     }

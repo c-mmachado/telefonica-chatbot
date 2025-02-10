@@ -2,9 +2,7 @@ import { AccessToken, ClientSecretCredential } from "@azure/identity";
 import {
   AuthProviderCallback,
   Client,
-  ResponseType,
 } from "@microsoft/microsoft-graph-client";
-import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
 
 import { BotConfiguration } from "../config/config";
 
@@ -14,6 +12,7 @@ export enum ApplicationIdentityType {
 
 export interface MicrosoftGraphEntity {
   "@odata.context": string;
+  id: string;
 }
 
 export interface MicrosoftGraphCollection<T> extends MicrosoftGraphEntity {
@@ -22,19 +21,81 @@ export interface MicrosoftGraphCollection<T> extends MicrosoftGraphEntity {
   value: T[];
 }
 
-export interface TeamsChannelMessages
-  extends MicrosoftGraphCollection<TeamsChannelMessage> {}
+export interface Me extends MicrosoftGraphEntity {
+  businessPhones: string[];
+  displayName: string;
+  givenName: string;
+  jobTitle: string;
+  mail: string;
+  mobilePhone: string;
+  officeLocation: string;
+  preferredLanguage: "pt-PT" | "es-ES" | "en-US" | string;
+  surname: string;
+  userPrincipalName: string;
+}
 
-export interface TeamsChannel extends MicrosoftGraphEntity {
-  id: string;
+export interface Teams extends MicrosoftGraphCollection<Team> {}
+
+export interface Team extends MicrosoftGraphEntity {
+  displayName: string;
+  description: string;
+  createdDateTime: Date | null;
+  internalId: string | null;
+  classification: any | null; // Better typing
+  specialization: string | null;
+  visibility: "private" | string;
+  webUrl: string | null;
+  isArchived: boolean | null;
+  isMembershipLimitedToOwners: boolean | null;
+  tagSettings: any | null; // Better typing
+  memberSettings: {
+    allowCreateUpdateChannels: boolean;
+    allowCreatePrivateChannels: boolean;
+    allowDeleteChannels: boolean;
+    allowAddRemoveApps: boolean;
+    allowCreateUpdateRemoveTabs: boolean;
+    allowCreateUpdateRemoveConnectors: boolean;
+  } | null;
+  guestSettings: {
+    allowCreateUpdateChannels: boolean;
+    allowDeleteChannels: boolean;
+  } | null;
+  messagingSettings: {
+    allowUserEditMessages: boolean;
+    allowUserDeleteMessages: boolean;
+    allowOwnerDeleteMessages: boolean;
+    allowTeamMentions: boolean;
+    allowChannelMentions: boolean;
+  } | null;
+  funSettings: {
+    allowGiphy: boolean;
+    giphyContentRating: string;
+    allowStickersAndMemes: boolean;
+    allowCustomMemes: boolean;
+  } | null;
+  discoverySettings: {
+    showInTeamsSearchAndSuggestions: boolean;
+  } | null;
+  summary: {
+    ownersCount: number;
+    membersCount: number;
+    guestsCount: number;
+  } | null;
+}
+
+export interface TeamChannels extends MicrosoftGraphCollection<TeamChannel> {}
+
+export interface TeamChannel extends MicrosoftGraphEntity {
   displayName: string;
   description: string;
   tenantId: string;
   isArchived: boolean;
 }
 
-export interface TeamsChannelMessage extends MicrosoftGraphEntity {
-  id: string;
+export interface TeamChannelMessages
+  extends MicrosoftGraphCollection<TeamChannelMessage> {}
+
+export interface TeamChannelMessage extends MicrosoftGraphEntity {
   subject: string;
   attachments: TeamsChannelMessageAttachment[];
   messageType: "message" | string;
@@ -99,19 +160,7 @@ export interface TeamsChannelMessageAttachment {
   thumbnailUrl: string;
 }
 
-export class MicrosoftGraphUtils {
-  public static async getAccessToken(
-    config: BotConfiguration
-  ): Promise<AccessToken> {
-    return new ClientSecretCredential(
-      config.tenantId,
-      config.clientId,
-      config.clientId
-    ).getToken("https://graph.microsoft.com/.default");
-  }
-}
-
-export const DELETED_MESSAGE: TeamsChannelMessage = {
+export const DELETED_MESSAGE: TeamChannelMessage = {
   "@odata.context": "",
   id: "-1",
   subject: "La mensaje ha sido eliminada",
@@ -136,165 +185,395 @@ export const DELETED_MESSAGE: TeamsChannelMessage = {
   webUrl: "",
 };
 
+export interface TokenResponse {
+  token_type: "Bearer" | string;
+  scope: string;
+  started_at: Date;
+  expires_in: number;
+  ext_expires_in: number;
+  access_token: string;
+}
+
+export interface MicrosoftGraphClient {
+  me(): Promise<Me | null>;
+
+  teams(): Promise<Teams | null>;
+
+  team(teamAadGroupId: string): Promise<Team | null>;
+
+  teamChannels(teamAadGroupId: string): Promise<TeamChannels | null>;
+
+  teamChannel(
+    teamAadGroupId: string,
+    channelId: string
+  ): Promise<TeamChannel | null>;
+
+  teamChannelMessage(
+    teamAadGroupId: string,
+    channelId: string,
+    threadId: string
+  ): Promise<TeamChannelMessage | null>;
+
+  teamChannelMessageReplies(
+    teamAadGroupId: string,
+    channelId: string,
+    threadId: string
+  ): Promise<TeamChannelMessage[]>;
+
+  deleteTeamChannelMessage(
+    teamAadGroupId: string,
+    channelId: string,
+    threadId: string
+  ): Promise<void>;
+
+  deleteTeamChannelMessageReply(
+    teamAadGroupId: string,
+    channelId: string,
+    threadId: string,
+    replyId: string
+  ): Promise<void>;
+}
+
+export interface MicrosoftGraphClientOptions {
+  username?: string;
+  password?: string;
+}
+
 /**
  * This class is a wrapper for the Microsoft Graph API.
  * See: https://developer.microsoft.com/en-us/graph for more information.
  */
-export class SimpleGraphClient {
-  public static client(token: string): Client {
-    return Client.init({
-      authProvider: (done: AuthProviderCallback): void => {
-        done(null, token);
+export class DefaultMicrosoftGraphClient implements MicrosoftGraphClient {
+  public static readonly DEFAULT_SCOPE = "https://graph.microsoft.com/.default";
+
+  private readonly _client: Client;
+
+  constructor(config: BotConfiguration, options: MicrosoftGraphClientOptions) {
+    this._client = Client.init({
+      debugLogging: true,
+      authProvider: async (done: AuthProviderCallback): Promise<void> => {
+        await this._authProvider(done, config, options);
       },
     });
   }
 
-  public static async me(graphClient: Client): Promise<any> {
-    return await graphClient
-      .api("/me")
-      .get()
-      .catch((error) => {
-        console.error(
-          `[${SimpleGraphClient.name}][ERROR] ${
-            this.me.name
-          } error:\n${JSON.stringify(error, null, 2)}`
-        );
-      });
-  }
-
-  public static async mePhoto(graphClient: Client): Promise<string> {
-    try {
-      const photo = await graphClient
-        .api(`/me/photo/$value`)
-        .get()
-        .catch((error) => {
-          console.error(
-            `[${SimpleGraphClient.name}][ERROR] ${
-              this.mePhoto.name
-            } error:\n${JSON.stringify(error, null, 2)}`
-          );
-        });
-
-      console.debug(
-        `[${SimpleGraphClient.name}][DEBUG] [mePhoto] photo:\n${JSON.stringify(
-          photo,
-          null,
-          2
-        )}`
-      );
-
-      const arrayBuffer = await photo.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer, "binary");
-      return "data:image/png;base64," + buffer.toString("base64");
-    } catch (error: any) {
-      console.error(
-        `[${SimpleGraphClient.name}][ERROR] ${
-          this.mePhoto.name
-        } error:\n${JSON.stringify(error, null, 2)}`
-      );
-      return "";
+  private async _authProvider(
+    done: AuthProviderCallback,
+    config: BotConfiguration,
+    options: MicrosoftGraphClientOptions
+  ): Promise<void> {
+    const token = await this._getToken(config, options);
+    if (token instanceof Error) {
+      done(token, null);
+    } else {
+      done(null, token.access_token);
     }
   }
 
-  public static async teamsChannel(
-    graphClient: Client,
-    teamAadGroupId: string,
-    channelId: string
-  ): Promise<TeamsChannel> {
-    return await graphClient
-      .api(`/teams/${teamAadGroupId}/channels/${channelId}`)
-      .get()
-      .catch((error: any) => {
+  private async _getToken(
+    config: BotConfiguration,
+    options: MicrosoftGraphClientOptions
+  ): Promise<TokenResponse | Error> {
+    const response = await fetch(`${config.authority}/oauth2/v2.0/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "password",
+        client_id: config?.clientId,
+        client_secret: config?.clientSecret,
+        scope: DefaultMicrosoftGraphClient.DEFAULT_SCOPE,
+        username: options?.username,
+        password: options?.password,
+      }),
+    })
+      .then<TokenResponse>((response: Response): Promise<TokenResponse> => {
+        return response.json();
+      })
+      .then((response: TokenResponse): TokenResponse => {
+        return {
+          ...response,
+          started_at: new Date(),
+        };
+      })
+      .catch((error: Error): Error => {
+        // Catches any errors that occur during the request
+
         console.error(
-          `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamsChannel.name
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this._getToken.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
+
+        // Return the error if there is an error during the request if the error is an instance of 'Error'
+        // otherwise create a new 'Error' instance with the error as its reason
+        if (error instanceof Error) {
+          return error;
+        }
+        return new Error(error);
+      });
+
+    // console.debug(
+    //   `[${DefaultMicrosoftGraphClient.name}][DEBUG] [${
+    //     this._getToken.name
+    //   }] response:\n${JSON.stringify(response, null, 2)}`
+    // );
+
+    return response;
+  }
+
+  public async me(): Promise<Me | null> {
+    // Get the user's profile from the '/me' endpoint of Microsoft Graph API
+    const me = await this._client
+      .api("/me")
+      .get()
+      .catch((error: Error) => {
+        // Catches any errors that occur during the request
+
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.me.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return null if there is an error
+        return null;
+      });
+
+    return me;
+  }
+
+  public async teams(): Promise<Teams | null> {
+    // Get the user's teams from the '/teams' endpoint of Microsoft Graph API
+    return await this._client
+      .api(`/teams`)
+      .get()
+      .catch((error: any) => {
+        // Catches any errors that occur during the request
+
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.teamChannel.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return null if there is an error
+        return null;
       });
   }
 
-  public static async teamsChannelMessage(
-    graphClient: Client,
+  public async team(teamAadGroupId: string): Promise<Team | null> {
+    // Get the team from the '/teams/{team-id}' endpoint of Microsoft Graph API
+    return await this._client
+      .api(`/teams/${teamAadGroupId}`)
+      .get()
+      .catch((error: any) => {
+        // Catches any errors that occur during the request
+
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.teamChannel.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return null if there is an error
+        return null;
+      });
+  }
+
+  public async teamChannels(
+    teamAadGroupId: string
+  ): Promise<TeamChannels | null> {
+    // Get the team's channels from the '/teams/{team-id}/channels' endpoint of Microsoft Graph API
+    return await this._client
+      .api(`/teams/${teamAadGroupId}/channels`)
+      .get()
+      .catch((error: any) => {
+        // Catches any errors that occur during the request
+
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.teamChannel.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return null if there is an error
+        return null;
+      });
+  }
+
+  public async teamChannel(
+    teamAadGroupId: string,
+    channelId: string
+  ): Promise<TeamChannel | null> {
+    // Get the team's channel from the '/teams/{team-id}/channels/{channel-id}' endpoint of Microsoft Graph API
+    return await this._client
+      .api(`/teams/${teamAadGroupId}/channels/${channelId}`)
+      .get()
+      .catch((error: any) => {
+        // Catches any errors that occur during the request
+
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.teamChannel.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return null if there is an error
+        return null;
+      });
+  }
+
+  public async teamChannelMessage(
     teamAadGroupId: string,
     channelId: string,
     threadId: string
-  ): Promise<TeamsChannelMessage> {
-    return await graphClient
+  ): Promise<TeamChannelMessage | null> {
+    // Get the team's channel message from the '/teams/{team-id}/channels/{channel-id}/messages/{thread-id}' endpoint of Microsoft Graph API
+    return await this._client
       .api(
         `/teams/${teamAadGroupId}/channels/${channelId}/messages/${threadId}`
       )
       .version("beta")
       .get()
       .catch((error: any) => {
+        // Catches any errors that occur during the request
+
         console.error(
-          `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamsChannelMessage.name
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.teamChannelMessage.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
+
+        // Return a deleted message placeholder if there is an error
+        return {
+          ...DELETED_MESSAGE,
+          id: threadId,
+        };
       });
   }
 
-  public static async teamsChannelMessages(
-    graphClient: Client,
+  public async teamChannelMessageReplies(
     teamAadGroupId: string,
     channelId: string,
     threadId: string
-  ): Promise<TeamsChannelMessages> {
-    return await graphClient
+  ): Promise<TeamChannelMessage[]> {
+    // Get the team's channel message replies from the '/teams/{team-id}/channels/{channel-id}/messages/{thread-id}/replies' endpoint of Microsoft Graph API
+    let result: TeamChannelMessage[] = [];
+    const replies: TeamChannelMessages = await this._client
       .api(
         `/teams/${teamAadGroupId}/channels/${channelId}/messages/${threadId}/replies`
       )
       .version("beta")
       .get()
       .catch((error: any) => {
+        // Catches any errors that occur during the request
+
         console.error(
-          `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamsChannelMessages.name
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.teamChannelMessageReplies.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
+
+        // Return null if there is an error
+        return null;
       });
+
+    if (replies) {
+      // Fetch the next replies from the next link
+      let oDataNextLink = replies["@odata.nextLink"];
+      while (oDataNextLink) {
+        const nextReplies = await this._teamChannelMessageRepliesNext(
+          oDataNextLink
+        );
+        if (!nextReplies) {
+          // Break if there is an error fetching the next replies from the next link
+          break;
+        }
+
+        // Loop through the next replies until there are no more replies
+        // and collect them in the result array
+        replies.value.push(...nextReplies.value);
+        oDataNextLink = nextReplies["@odata.nextLink"];
+      }
+
+      // Reverse the replies to get the correct order of the replies since the replies are fetched acsending order by date by default
+      result = replies.value.reverse();
+    }
+
+    return result ?? [];
   }
 
-  public static async teamsChannelMessagesNext(
-    graphClient: Client,
+  private async _teamChannelMessageRepliesNext(
     odataNextLink: string
-  ): Promise<TeamsChannelMessages> {
-    return await graphClient
+  ): Promise<TeamChannelMessages | null> {
+    return await this._client
       .api(odataNextLink)
       .version("beta")
       .get()
       .catch((error: any) => {
+        // Catches any errors that occur during the request
+
         console.error(
-          `[${SimpleGraphClient.name}][ERROR] ${
-            this.teamsChannelMessagesNext.name
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this._teamChannelMessageRepliesNext.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
+
+        // Return null if there is an error
+        return null;
+      });
+  }
+
+  public async deleteTeamChannelMessage(
+    teamAadGroupId: string,
+    channelId: string,
+    threadId: string
+  ): Promise<void> {
+    // Deletes the team's channel message from the '/teams/{team-id}/channels/{channel-id}/messages/{thread-id}' endpoint of Microsoft Graph API
+    return await this._client
+      .api(
+        `/teams/${teamAadGroupId}/channels/${channelId}/messages/${threadId}/softDelete`
+      )
+      .version("beta")
+      .post({})
+      .catch((error: Error): void => {
+        // Catches any errors that occur during the request
+
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.deleteTeamChannelMessage.name
           } error:\n${JSON.stringify(error, null, 2)}`
         );
       });
   }
 
-  public static async downloadFile(
-    graphClient: Client,
-    url: string
-  ): Promise<ArrayBuffer> {
-    const buffer = graphClient
-      .api(url)
-      .responseType(ResponseType.ARRAYBUFFER)
-      .get();
+  public async deleteTeamChannelMessageReply(
+    teamAadGroupId: string,
+    channelId: string,
+    threadId: string,
+    replyId: string
+  ): Promise<void> {
+    // Deletes the team's channel message reply from the '/teams/{team-id}/channels/{channel-id}/messages/{thread-id}/replies/{reply-id}' endpoint of Microsoft Graph API
+    return await this._client
+      .api(
+        `/teams/${teamAadGroupId}/channels/${channelId}/messages/${threadId}/replies/${replyId}`
+      )
+      .version("beta")
+      .delete()
+      .catch((error: Error): void => {
+        // Catches any errors that occur during the request
 
-    const buffer2 = await fetch(url).then((res: Response) => res.arrayBuffer());
+        console.error(
+          `[${DefaultMicrosoftGraphClient.name}][ERROR] ${
+            this.deleteTeamChannelMessageReply.name
+          } error:\n${JSON.stringify(error, null, 2)}`
+        );
 
-    console.debug(
-      `[${SimpleGraphClient.name}][DEBUG] [${
-        this.downloadFile.name
-      }] buffer:\n${JSON.stringify(buffer, null, 2)}`
-    );
-
-    console.debug(
-      `[${SimpleGraphClient.name}][DEBUG] [${
-        this.downloadFile.name
-      }] buffer2:\n${JSON.stringify(buffer2, null, 2)}`
-    );
-    return buffer;
+        // Return null if there is an error
+        return null;
+      });
   }
 }
 

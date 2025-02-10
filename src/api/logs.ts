@@ -1,10 +1,8 @@
 import { Router, Response, Request, NextFunction } from "express";
 
-import { LogsRepository } from "../repositories/logs";
-import { dbConnection } from "../config/db";
+import { logsRepository as repository } from "../config/db";
 
 export const router = Router();
-export const repository: LogsRepository = new LogsRepository(dbConnection);
 
 router.get(
   "/",

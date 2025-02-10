@@ -37,3 +37,33 @@ export type AdaptiveCardActionAuthRefreshDataOutput = {
   conversation: ConversationAccount;
   from: ChannelAccount;
 };
+
+export type AdaptiveCardActionCreateTicketData = {
+  command: string;
+  team: TeamDetails & { choices: { title: string; value: string }[] };
+  channel: { id: string; name: string } & {
+    choices: { title: string; value: string }[];
+  };
+  conversation: { id: string; name: string } & {
+    choices: { title: string; value: string }[];
+  };
+  from: ConversationAccount & { choices: { title: string; value: string }[] };
+  ticket: {
+    state: {
+      id: string;
+      choices: { title: string; value: string }[];
+    };
+    queue: {
+      id: string;
+      choices: { title: string; value: string }[];
+    };
+    description: string;
+  };
+  token: string;
+  createdUtc: string;
+  gui: any;
+
+  ticketStateChoiceSet: string;
+  ticketCategoryChoiceSet: string;
+  ticketDescriptionInput: string;
+};

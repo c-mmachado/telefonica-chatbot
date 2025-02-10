@@ -17,6 +17,10 @@ import { AdaptiveCardAction } from "../utils/actions";
 import { RunnableDialog } from "../dialogs/dialog";
 import { BotConfiguration } from "../config/config";
 
+export interface ConversationReferenceStore {
+  [key: string]: Partial<ConversationReference>;
+}
+
 export interface HandlerManager {
   resolve(pattern: string, type: HandlerType.Command): CommandHandler | null;
   resolve(pattern: string, type: HandlerType.Action): ActionHandler | null;
@@ -187,10 +191,6 @@ export class DefaultHandlerManager implements HandlerManager {
     }
     return await this.dispatch(handler, context, message, data);
   }
-}
-
-export interface ConversationReferenceStore {
-  [key: string]: Partial<ConversationReference>;
 }
 
 export class HandlerContextManager {

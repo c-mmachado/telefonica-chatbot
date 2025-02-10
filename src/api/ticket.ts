@@ -1,12 +1,8 @@
 import { Router, Response, Request, NextFunction } from "express";
 
-import { APIClient } from "../utils/apiClient";
-import { config } from "../config/config";
+import { apiClient } from "../config/ticket";
 
 export const router = Router();
-
-// Create the API client to the ticketing API
-export const apiClient: APIClient = new APIClient(config);
 
 // Database health check endpoint to verify that the database is running
 router.get(

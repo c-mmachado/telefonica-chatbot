@@ -12,44 +12,15 @@ import { ActionHandler, HandlerTurnContext } from "../../../commands/handler";
 import {
   ApplicationIdentityType,
   DELETED_MESSAGE,
-  SimpleGraphClient,
-  TeamsChannelMessage,
+  MicrosoftGraphClient,
+  TeamChannelMessage,
 } from "../../../utils/graphClient";
 import { APIClient, Queue, Ticket } from "../../../utils/apiClient";
 import { BotConfiguration } from "../../../config/config";
+import { LogsRepository } from "../../../repositories/logs";
+import { AdaptiveCardActionCreateTicketData } from "../../../utils/actions";
 
 import ticketCard from "../../../adaptiveCards/templates/ticketCard.json";
-import { LogsRepository } from "../../../repositories/logs";
-
-type AdaptiveCardActionCreateTicketData = {
-  command: string;
-  team: TeamDetails & { choices: { title: string; value: string }[] };
-  channel: { id: string; name: string } & {
-    choices: { title: string; value: string }[];
-  };
-  conversation: { id: string; name: string } & {
-    choices: { title: string; value: string }[];
-  };
-  from: ConversationAccount & { choices: { title: string; value: string }[] };
-  ticket: {
-    state: {
-      id: string;
-      choices: { title: string; value: string }[];
-    };
-    queue: {
-      id: string;
-      choices: { title: string; value: string }[];
-    };
-    description: string;
-  };
-  token: string;
-  createdUtc: string;
-  gui: any;
-
-  ticketStateChoiceSet: string;
-  ticketCategoryChoiceSet: string;
-  ticketDescriptionInput: string;
-};
 
 export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
   public pattern: TriggerPatterns = "createTicket";
@@ -57,7 +28,8 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
   constructor(
     private readonly _config: BotConfiguration,
     private readonly _apiClient: APIClient,
-    private readonly _repository: LogsRepository
+    private readonly _graphClient: MicrosoftGraphClient,
+    private readonly _logs: LogsRepository
   ) {}
 
   public async run(
@@ -69,9 +41,9 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
       `[${TicketAdaptiveCardCreateActionHandler.name}][DEBUG] [${this.run.name}]`
     );
 
+    // Get the data from the action and update the card GUI properties to reflect the state of the ticket creation
     const actionData: AdaptiveCardActionCreateTicketData =
       handlerContext.context.activity.value?.action?.data;
-
     const cardJson = new ACData.Template(ticketCard).expand({
       $root: {
         ...actionData,
@@ -99,76 +71,66 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             },
             cancel: {
               ...actionData.gui.buttons.cancel,
-              label: "Borrar",
+              label: "Borrar Hilo",
+              tooltip: "Borra el hilo de conversacion asociado a la incidencia",
             },
           },
         },
       },
     });
+
+    // Update the card with the ticket information that was just submitted
     const message = MessageFactory.attachment(
       CardFactory.adaptiveCard(cardJson)
     );
     message.id = handlerContext.context.activity.replyToId;
     await handlerContext.context.updateActivity(message);
 
-    const graphClient = SimpleGraphClient.client(actionData.token);
-    let initialMessage: TeamsChannelMessage =
-      await SimpleGraphClient.teamsChannelMessage(
-        graphClient,
+    // Get the initial message in the thread (The message that started the thread and contains a subject header)
+    let initialMessage: TeamChannelMessage =
+      await this._graphClient.teamChannelMessage(
         actionData.team.aadGroupId,
         actionData.channel.id,
         actionData.conversation.id
-      ).catch((error: any): Promise<TeamsChannelMessage> => {
-        console.error(
-          `[${TicketAdaptiveCardCreateActionHandler.name}][ERROR] ${
-            this.run.name
-          } error:\n${JSON.stringify(error, null, 2)}`
-        );
+      );
 
-        return null;
-      });
+    // Get all the replies in the thread
+    let replies: TeamChannelMessage[] =
+      await this._graphClient.teamChannelMessageReplies(
+        actionData.team.aadGroupId,
+        actionData.channel.id,
+        actionData.conversation.id
+      );
 
-    initialMessage = initialMessage ?? DELETED_MESSAGE;
-    const threadMessages = await SimpleGraphClient.teamsChannelMessages(
-      graphClient,
-      actionData.team.aadGroupId,
-      actionData.channel.id,
-      actionData.conversation.id
-    );
-    let oDataNextLink = threadMessages["@odata.nextLink"];
-    while (oDataNextLink) {
-      const nextThreadMessages =
-        await SimpleGraphClient.teamsChannelMessagesNext(
-          graphClient,
-          oDataNextLink
-        );
-      threadMessages.value.push(...nextThreadMessages.value);
-      oDataNextLink = nextThreadMessages["@odata.nextLink"];
-    }
-    threadMessages.value = [
+    // Add the initial message to the replies and ticket description from the card to the beginning of the replies
+    // to be added as comments to the ticket
+    replies = [
       {
         body: {
           content: actionData.ticketDescriptionInput,
-          contentType: "text/html",
+          contentType: "text/plain",
         },
         from: initialMessage.from,
-      } as TeamsChannelMessage,
+      } as TeamChannelMessage,
       initialMessage,
-      ...threadMessages.value.reverse(),
+      ...replies,
     ];
 
     console.debug(
-      `[${TicketAdaptiveCardCreateActionHandler.name}][DEBUG] ${this.run.name} threadMessages.length: ${threadMessages.value.length}`
+      `[${TicketAdaptiveCardCreateActionHandler.name}][DEBUG] ${this.run.name} threadMessages.length: ${replies?.length}`
     );
 
-    // TeamsInfo.getPagedTeamMembers(context, undefined).then((result) => {});
+    // Get the chosen queue from 'ticketCategoryChoiceSet' and get the queue from the API
     const queue: Queue = await this._apiClient.queue(
       actionData.ticketCategoryChoiceSet
     );
+
+    // Create the ticket in the Ticketing API
     const ticket = await this._apiClient.createTicket(
       queue,
       initialMessage.subject
     );
+
     // const ticket: Ticket = await this._apiClient.ticket({
     //   id: "416115",
     //   _url: "https://test-epg-vmticket-01.hi.inet/REST/2.0/ticket/416115",
@@ -191,17 +153,17 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
       } ticket:\n${JSON.stringify(ticket, null, 2)}`
     );
 
-    this._repository.createLog(
-      JSON.stringify(
-        {
-          ...actionData,
-          token: undefined,
-          threadMessages,
-        },
-      )
+    // Create a log entry for the ticket creation wuth the actionData and the thread messages that were
+    // used to create the ticket
+    await this._logs.createLog(
+      JSON.stringify({
+        ...actionData,
+        token: undefined,
+        threadMessages: replies,
+      })
     );
 
-    for (const message of threadMessages.value) {
+    for (const message of replies) {
       if (!message.body?.content?.trim() || !message.from?.user) {
         continue;
       }
@@ -226,15 +188,15 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
       }
 
       await this._apiClient.addTicketComment(
-        graphClient,
-        actionData.token,
+        this._graphClient,
         ticket,
         message
       );
     }
 
+    // Send a message to the user that the ticket was created and provide a link to the ticket
     return await handlerContext.context.sendActivity(
-      `Se hay creado el ticket con el número: ${ticket.id}. Lo puedes acceder en [este enlace](https://test-epg-vmticket-01.hi.inet/Ticket/Display.html?id=${ticket.id}).`
+      `Se hay creado el ticket con el número: ${ticket.id}. Lo puedes acceder en [este enlace](${this._config.apiEndpoint}/Ticket/Display.html?id=${ticket.id}).`
     );
   }
 }
