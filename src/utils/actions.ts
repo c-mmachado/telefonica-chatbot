@@ -47,7 +47,7 @@ export type AdaptiveCardActionCreateTicketData = {
   conversation: { id: string; name: string } & {
     choices: { title: string; value: string }[];
   };
-  from: ConversationAccount & { choices: { title: string; value: string }[] };
+  from: ChannelAccount & { choices: { title: string; value: string }[] };
   ticket: {
     state: {
       id: string;

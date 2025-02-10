@@ -9,18 +9,12 @@ import {
   HandlerTurnContext,
 } from "../handler";
 import {
-  DefaultMicrosoftGraphClient,
   TeamChannelMessage,
   TeamChannel,
   DELETED_MESSAGE,
   MicrosoftGraphClient,
 } from "../../utils/graphClient";
-import {
-  APIClient,
-  Queue,
-  Queues,
-  TypedHyperlinkEntity,
-} from "../../utils/apiClient";
+import { APIClient, Queues, TypedHyperlinkEntity } from "../../utils/apiClient";
 
 import ticketCard from "../../adaptiveCards/templates/ticketCard.json";
 

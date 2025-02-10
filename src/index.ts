@@ -28,16 +28,13 @@ import { commandBot } from "./config/initialize";
 import { config } from "./config/config";
 import { apiClient } from "./config/ticket";
 import { logsRepository, techRepository } from "./config/db";
+import { graphClient } from "./config/graph";
 
 import { router as techiniciansRouter } from "./api/technicians";
 import { router as apiLogs } from "./api/logs";
+import { router as ticketRouter } from "./api/ticket";
+import { router as graphRouter } from "./api/graph";
 import { router as dbRouter } from "./api/db";
-
-// Create the graph client
-const graphClient = new DefaultMicrosoftGraphClient(config, {
-  username: config.graphUsername,
-  password: config.graphPassword,
-});
 
 // Define the state store for your bot.
 // See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
@@ -105,6 +102,8 @@ app.use(express.json());
 const apiRouter: Router = Router();
 app.use("/api", apiRouter);
 apiRouter.use("/db", dbRouter);
+apiRouter.use("/ticket", ticketRouter);
+apiRouter.use("/graph", graphRouter);
 apiRouter.use("/technicians", techiniciansRouter);
 apiRouter.use("/logs", apiLogs);
 
