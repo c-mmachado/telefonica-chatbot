@@ -33,6 +33,7 @@ import { router as techiniciansRouter } from "./api/technicians";
 import { router as apiLogs } from "./api/logs";
 import { router as ticketRouter } from "./api/ticket";
 import { router as graphRouter } from "./api/graph";
+import { router as sharepointRouter } from "./api/sharepoint";
 import { router as dbRouter } from "./api/db";
 
 // Define the state store for your bot.
