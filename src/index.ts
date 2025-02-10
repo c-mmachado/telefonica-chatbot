@@ -35,8 +35,8 @@ import { router as dbRouter } from "./api/db";
 
 // Create the graph client
 const graphClient = new DefaultMicrosoftGraphClient(config, {
-  username: "bot@carlosmachado1964.onmicrosoft.com",
-  password: "Mercurio123",
+  username: config.graphUsername,
+  password: config.graphPassword,
 });
 
 // Define the state store for your bot.

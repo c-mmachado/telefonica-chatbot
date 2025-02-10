@@ -13,7 +13,7 @@ dotEnv({
   override: true,
 });
 
-export declare interface BotConfiguration {
+export interface BotConfiguration {
   botId: string;
   botPassword: string;
   botDomain: string;
@@ -39,6 +39,9 @@ export declare interface BotConfiguration {
   dbUser: string;
   dbPassword: string;
   dbName: string;
+
+  graphUsername: string;
+  graphPassword: string;
 }
 
 export const config: BotConfiguration = {
@@ -72,6 +75,10 @@ export const config: BotConfiguration = {
   dbUser: process.env.DB_USER,
   dbPassword: process.env.DB_PASSWORD,
   dbName: process.env.DB_NAME,
+
+  // Graph settings
+  graphUsername: process.env.GRAPH_USERNAME,
+  graphPassword: process.env.GRAPH_PASSWORD,
 };
 
 console.debug(`[config][DEBUG] config:\n${JSON.stringify(config, null, 2)}`);
