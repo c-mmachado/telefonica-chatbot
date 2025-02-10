@@ -5,6 +5,7 @@ import {
 } from "@microsoft/microsoft-graph-client";
 
 import { BotConfiguration } from "../config/config";
+import { MicrosoftTokenResponse } from "./types";
 
 export enum ApplicationIdentityType {
   BOT = "bot",
@@ -185,15 +186,6 @@ export const DELETED_MESSAGE: TeamChannelMessage = {
   webUrl: "",
 };
 
-export interface TokenResponse {
-  token_type: "Bearer" | string;
-  scope: string;
-  started_at: Date;
-  expires_in: number;
-  ext_expires_in: number;
-  access_token: string;
-}
-
 export interface MicrosoftGraphClient {
   me(): Promise<Me | null>;
 
@@ -273,7 +265,7 @@ export class DefaultMicrosoftGraphClient implements MicrosoftGraphClient {
   private async _getToken(
     config: BotConfiguration,
     options: MicrosoftGraphClientOptions
-  ): Promise<TokenResponse | Error> {
+  ): Promise<MicrosoftTokenResponse | Error> {
     const response = await fetch(`${config.authority}/oauth2/v2.0/token`, {
       method: "POST",
       headers: {
@@ -288,10 +280,12 @@ export class DefaultMicrosoftGraphClient implements MicrosoftGraphClient {
         password: options?.password,
       }),
     })
-      .then<TokenResponse>((response: Response): Promise<TokenResponse> => {
-        return response.json();
-      })
-      .then((response: TokenResponse): TokenResponse => {
+      .then<MicrosoftTokenResponse>(
+        (response: Response): Promise<MicrosoftTokenResponse> => {
+          return response.json();
+        }
+      )
+      .then((response: MicrosoftTokenResponse): MicrosoftTokenResponse => {
         return {
           ...response,
           started_at: new Date(),

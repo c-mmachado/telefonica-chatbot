@@ -22,7 +22,6 @@ import { AuthCommandDispatchDialog } from "./dialogs/authCommandDispatchDialog";
 import { AuthRefreshActionHandler } from "./adaptiveCards/actions/authRefresh/authRefresh";
 import { TicketAdaptiveCardCreateActionHandler } from "./adaptiveCards/actions/ticket/create";
 import { TicketAdaptiveCardCancelActionHandler } from "./adaptiveCards/actions/ticket/cancel";
-import { DefaultMicrosoftGraphClient } from "./utils/graphClient";
 
 import { commandBot } from "./config/initialize";
 import { config } from "./config/config";
@@ -104,6 +103,7 @@ app.use("/api", apiRouter);
 apiRouter.use("/db", dbRouter);
 apiRouter.use("/ticket", ticketRouter);
 apiRouter.use("/graph", graphRouter);
+apiRouter.use("/sharepoint", sharepointRouter);
 apiRouter.use("/technicians", techiniciansRouter);
 apiRouter.use("/logs", apiLogs);
 
