@@ -19,3 +19,6 @@ lib/
 # VS Code
 .vscode/
 *.code-workspace
+
+# Extra
+certs/
