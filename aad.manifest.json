@@ -27,31 +27,7 @@
                     "type": "Scope"
                 },
                 {
-                    "id": "AppCatalog.ReadWrite.All",
-                    "type": "Scope"
-                },
-                {
-                    "id": "TeamsAppInstallation.ReadForUser",
-                    "type": "Scope"
-                },
-                {
-                    "id": "TeamsAppInstallation.ReadWriteForUser",
-                    "type": "Scope"
-                },
-                {
-                    "id": "TeamsAppInstallation.ReadWriteSelfForUser",
-                    "type": "Scope"
-                },
-                {
-                    "id": "ChatMessage.Read",
-                    "type": "Scope"
-                },
-                {
                     "id": "Team.ReadBasic.All",
-                    "type": "Scope"
-                },
-                {
-                    "id": "Channel.ReadBasic.All",
                     "type": "Scope"
                 },
                 {
@@ -59,7 +35,27 @@
                     "type": "Scope"
                 },
                 {
+                    "id": "Files.Read.All",
+                    "type": "Scope"
+                },
+                {
+                    "id": "ChatMessage.Read",
+                    "type": "Scope"
+                },
+                {
+                    "id": "ChannelMessage.ReadWrite",
+                    "type": "Scope"
+                },
+                {
                     "id": "ChannelMessage.Read.All",
+                    "type": "Scope"
+                },
+                {
+                    "id": "ChannelMessage.Edit",
+                    "type": "Scope"
+                },
+                {
+                    "id": "Channel.ReadBasic.All",
                     "type": "Scope"
                 }
             ]
