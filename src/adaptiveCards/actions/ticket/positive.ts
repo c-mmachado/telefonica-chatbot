@@ -65,6 +65,9 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
     }
 
     if (actionData.gui.page === 0) {
+      state.ticket.ticketDescriptionInput.value =
+        actionData.ticketDescriptionInput;
+
       const customFields: any[] = await this._constructCustomFields(
         state,
         actionData
@@ -128,6 +131,14 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
 
       return;
     } else {
+      for (const [key, value] of Object.entries<any>(
+        state.ticket.customFields
+      )) {
+        if (key in actionData) {
+          value.value = actionData[key];
+        }
+      }
+
       // Creates the ticket in the RT API
       await this._createTicket(handlerContext, state);
 
@@ -186,13 +197,13 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
     // Add the initial message to the replies and ticket description from the card to the beginning of the replies
     // to be added as comments to the ticket
     replies = [
-      {
-        body: {
-          content: handlerState.ticket.ticketDescriptionInput,
-          contentType: "text/plain",
-        },
-        from: thread.from,
-      } as TeamChannelMessage,
+      // {
+      //   body: {
+      //     content: handlerState.ticket.ticketDescriptionInput.value,
+      //     contentType: "text/plain",
+      //   },
+      //   from: thread.from,
+      // } as TeamChannelMessage,
       thread,
       ...replies,
     ];

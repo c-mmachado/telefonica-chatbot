@@ -1,5 +1,12 @@
 // Overrides the 'console.debug' and  method to add a timestamp to the debug messages
 console.debug = (message: string, ...optionalParams: any[]): void => {
+  Error.prepareStackTrace = (_, stack) => stack;
+  const err = new Error();
+  const callerLine = (
+    err.stack[1] as unknown as NodeJS.CallSite
+  ).getLineNumber();
+  const callerFile = (err.stack[1] as unknown as NodeJS.CallSite).getFileName();
+
   console.log(`[${new Date().toISOString()}]${message}`, ...optionalParams);
 };
 
@@ -29,7 +36,7 @@ import { OAuthDialog } from "./dialogs/oauthDialog";
 import { TicketCommandHandler } from "./commands/ticket/ticket";
 import { AuthRefreshActionHandler } from "./adaptiveCards/actions/authRefresh/authRefresh";
 import { TicketAdaptiveCardPositiveActionHandler } from "./adaptiveCards/actions/ticket/positive";
-import { TicketAdaptiveCardCancelActionHandler } from "./adaptiveCards/actions/ticket/negative";
+import { TicketAdaptiveCardNegativeActionHandler } from "./adaptiveCards/actions/ticket/negative";
 import { TicketAdaptiveCardSelectChoiceActionHandler } from "./adaptiveCards/actions/ticket/selectChoice";
 
 import { commandBot } from "./config/initialize";
@@ -44,7 +51,6 @@ import { router as ticketRouter } from "./api/ticket";
 import { router as graphRouter } from "./api/graph";
 import { router as sharepointRouter } from "./api/sharepoint";
 import { router as dbRouter } from "./api/db";
-
 
 // Define the state store for your bot.
 // See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
@@ -82,7 +88,7 @@ const handlerManager: HandlerManager = new OAuthAwareHandlerManager(
         graphClient,
         logsRepository
       ),
-      new TicketAdaptiveCardCancelActionHandler(graphClient),
+      new TicketAdaptiveCardNegativeActionHandler(graphClient),
       new TicketAdaptiveCardSelectChoiceActionHandler(apiClient),
     ],
   }

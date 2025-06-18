@@ -35,12 +35,12 @@ export class TicketCommandHandler extends CommandHandler {
     );
 
     await handlerContext.switchToPersonalConversationAsync(
-      async (wrapper: HandlerTurnContext): Promise<void> => {
+      async (handlerContext: HandlerTurnContext): Promise<void> => {
         console.debug(
           `[${TicketCommandHandler.name}][TRACE] ${this.run.name} handlerContext.switchToPersonalConversationAsync <anonymous>(wrapper: HandlerTurnContext) => Promise<void>@start`
         );
 
-        await this._doRun(wrapper, commandMessage, commandMessageContext); //, token);
+        await this._doRun(handlerContext, commandMessage, commandMessageContext); //, token);
 
         console.debug(
           `[${TicketCommandHandler.name}][TRACE] ${this.run.name} handlerContext.switchToPersonalConversationAsync <anonymous>(wrapper: HandlerTurnContext) => Promise<void>@end`
