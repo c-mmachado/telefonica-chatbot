@@ -143,6 +143,20 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
       state.gui.buttons.cancel.title = "Borrar Hilo";
       state.gui.buttons.cancel.tooltip = "Borra el hilo de conversacion";
 
+      const customFieldsJson = state.page1.body[4].items;
+      for (const customFieldJson of customFieldsJson) {
+        const keyJson: string = customFieldJson.items[0].id;
+        const cfState: any = state.ticket.customFields[keyJson];
+
+        if (cfState.type === "Select") {
+          customFieldJson.items[1].items[0].choices = [];
+          customFieldJson.items[1].selectAction.isEnabled = false;
+        } else {
+          customFieldJson.items[1].text = cfState.value;
+          customFieldJson.items[1].type = "TextBlock";
+        }
+      }
+
       // Prepare the card data for the adaptive card
       const cardData: AdaptiveCardTicketCardPageData = {
         sequenceId: state.sequenceId,
