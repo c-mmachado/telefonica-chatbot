@@ -99,8 +99,8 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
       // Update the state GUI properties to reflect the state of the ticket creation
       state.gui.page = 1;
       state.gui.buttons.create.enabled = false;
-      state.gui.buttons.create.title = "Crear Incidencia";
-      state.gui.buttons.create.tooltip = "Crea una nueva incidencia";
+      state.gui.buttons.create.title = "Crear Ticket";
+      state.gui.buttons.create.tooltip = "Crea un nuevo ticket";
 
       // Prepare the card data for the adaptive card
       const cardData: AdaptiveCardTicketCardPageData = {
@@ -149,6 +149,7 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
         const cfState: any = state.ticket.customFields[keyJson];
 
         if (cfState.type === "Select") {
+          customFieldJson.items[1].items[0].type = "TextBlock";
           customFieldJson.items[1].items[0].choices = [];
           customFieldJson.items[1].selectAction.isEnabled = false;
         } else {
