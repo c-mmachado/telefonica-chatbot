@@ -7,7 +7,7 @@ import {
 } from "../../../commands/manager";
 import { ActionHandler } from "../../../commands/handler";
 import { HandlerTurnContext } from "../../../commands/context";
-import { AdaptiveCardActionActivityValue } from "../../../utils/actions";
+import { AdaptiveCardActionActivityValue } from "../actions";
 import {
   MicrosoftGraphClient,
   TeamChannelMessage,

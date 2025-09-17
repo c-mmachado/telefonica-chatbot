@@ -1,7 +1,7 @@
 {
     "type": "AdaptiveCard",
     "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-    "version": "1.5",
+    "version": "1.4",
     "body": [
         {
             "type": "TextBlock",
@@ -216,20 +216,45 @@
                     "items": [
                         {
                             "type": "TextBlock",
-                            "size": "Medium",
-                            "weight": "Bolder",
+                            "size": "medium",
+                            "weight": "bolder",
                             "text": "Tiempo trabajado",
                             "id": "ticketTimeTakenLabel"
                         },
                         {
-                            "type": "Container",
-                            "items": [
+                            "type": "ColumnSet",
+                            "columns": [
                                 {
-                                    "type": "Input.Text",
-                                    "id": "ticketTimeTakenInput",
-                                    "placeholder": "Tiempo trabajado en minutos",
-                                    "isRequired": true,
-                                    "value": "${ticket.ticketTimeTakenInput.value}"
+                                    "type": "Column",
+                                    "width": "auto",
+                                    "verticalContentAlignment": "Center"
+                                },
+                                {
+                                    "type": "Column",
+                                    "width": "stretch",
+                                    "verticalContentAlignment": "Center",
+                                    "items": [
+                                        {
+                                            "type": "Input.Number",
+                                            "id": "ticketTimeTakenInput",
+                                            "placeholder": "Tiempo trabajado en minutos",
+                                            "isRequired": true,
+                                            "value": "${ticket.ticketTimeTakenInput.value}",
+                                            "errorMessage": "Error Message"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "Column",
+                                    "width": "auto",
+                                    "verticalContentAlignment": "Center",
+                                    "items": [
+                                        {
+                                            "type": "TextBlock",
+                                            "id": "ticketTimeTakenSuffixLabel",
+                                            "text": "Minutos"
+                                        }
+                                    ]
                                 }
                             ]
                         }

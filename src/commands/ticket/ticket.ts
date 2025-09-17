@@ -11,7 +11,7 @@ import {
 import { CommandHandler } from "../handler";
 import { HandlerTurnContext } from "../context";
 import { APIClient, Queues, TypedHyperlinkEntity } from "../../utils/apiClient";
-import { AdaptiveCardTicketCardPageData } from "../../utils/actions";
+import { AdaptiveCardTicketCardPageData } from "../../adaptiveCards/actions/actions";
 
 import page0 from "../../adaptiveCards/templates/ticket/page0.json";
 
@@ -27,8 +27,8 @@ export class TicketCommandHandler extends CommandHandler {
    */
   public async run(
     handlerContext: HandlerTurnContext,
-    commandMessage: HandlerMessage,
-    commandMessageContext: HandlerMessageContext
+    handlerMessage: HandlerMessage,
+    handlerMessageContext: HandlerMessageContext
   ): Promise<void> {
     console.debug(
       `[${TicketCommandHandler.name}][TRACE] ${this.run.name}@start`
@@ -42,8 +42,8 @@ export class TicketCommandHandler extends CommandHandler {
 
         await this._doRun(
           handlerContext,
-          commandMessage,
-          commandMessageContext
+          handlerMessage,
+          handlerMessageContext
         ); //, token);
 
         console.debug(

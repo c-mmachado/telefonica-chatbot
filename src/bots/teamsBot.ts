@@ -7,7 +7,6 @@ import {
   InvokeResponse,
   TeamsInfo,
   TeamsChannelAccount,
-  StatusCodes,
 } from "botbuilder";
 
 import { BotConfiguration } from "../config/config";
@@ -17,9 +16,9 @@ import { OAuthDialog } from "../dialogs/oauthDialog";
 import {
   AdaptiveCardAction,
   AdaptiveCardActionActivityValue,
-} from "../utils/actions";
+} from "../adaptiveCards/actions/actions";
 import { TechnicianRepository } from "../repositories/technicians";
-import { ErrorCode, ErrorWithCode } from "@microsoft/teamsfx";
+import { AdaptiveCards } from "../adaptiveCards/adaptiveCards";
 
 export class TeamsBot extends TeamsActivityHandler {
   constructor(
@@ -28,7 +27,6 @@ export class TeamsBot extends TeamsActivityHandler {
     private readonly _userState: UserState,
     private readonly _handlerManager: HandlerManager,
     private readonly _dialogManager: DialogManager,
-    // private readonly _dialog: RunnableDialog, // TODO: Map each dialog to a dialog name
     private readonly _techRepository: TechnicianRepository
   ) {
     super();
@@ -68,32 +66,33 @@ export class TeamsBot extends TeamsActivityHandler {
   /**
    * @inheritdoc
    */
-  public async onInvokeActivity(context: TurnContext): Promise<InvokeResponse> {
+  public async onInvokeActivity(
+    context: TurnContext
+  ): Promise<InvokeResponse<any>> {
     console.debug(`@start`);
-    console.debug(
-      `context.activity:${context.activity ? "\n" : " "}`,
-      context.activity
-    );
+    console.debug(`context.activity:`, context.activity);
 
     if (context.activity.name === AdaptiveCardAction.Name) {
       // Extracts the action value from the activity when the activity has name 'adaptiveCard/action'
       const value: AdaptiveCardActionActivityValue = context.activity.value;
 
-      console.debug(`context.activity.value:${value ? "\n" : " "}`, value);
+      console.debug(`context.activity.value:`, value);
 
       // Resolves action handler from 'activity.value.action.verb' and dispatches the action
-      await this._handlerManager
-        .resolveAndDispatch(context, value.action.verb, value.action.data)
-        .catch((error: any): void => {
-          // Catches any errors that occur during the action handling and logs them
-          console.error(error);
-        });
+      const cardOrText: any | string =
+        await this._handlerManager.resolveAndDispatch<any | string>(
+          context,
+          value.action.verb,
+          value.action.data
+        );
 
       console.debug(`@end[ADAPTIVE_CARD_ACTION]`);
 
       // Return an invoke response to indicate that the activity was handled and to prevent the Teams client from displaying an error message
       // due to the activity not being responded to
-      return { status: StatusCodes.OK };
+
+      // return { status: StatusCodes.OK };
+      return AdaptiveCards.invokeResponse(cardOrText);
     }
 
     // Call super implementation for all other invoke activities

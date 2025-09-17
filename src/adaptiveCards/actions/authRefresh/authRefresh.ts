@@ -11,7 +11,7 @@ import { OAuthDialog } from "../../../dialogs/oauthDialog";
 import {
   AdaptiveCardActionActivityValue,
   AdaptiveCardActionAuthRefreshDataOutput,
-} from "../../../utils/actions";
+} from "../actions";
 
 export class AuthRefreshActionHandler extends ActionHandler {
   public pattern: TriggerPatterns = "authRefresh";

@@ -26,7 +26,7 @@ import {
   AdaptiveCardActionActivityValue,
   AdaptiveCardActionPositiveTicketPageData,
   AdaptiveCardTicketCardPageData,
-} from "../../../utils/actions";
+} from "../actions";
 import { LogsRepository } from "../../../repositories/logs";
 
 import page1 from "../../templates/ticket/page1.json";
@@ -83,18 +83,8 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
       state.page1 = page1;
 
       customFields[0].items[1].items[0].choices =
-        state.ticket.customFields[customFields[0].items[0].id].choices;
+        state.ticket.customFields[Number(customFields[0].items[1].items[0].id)].choices;
       customFields[0].items[1].selectAction.isEnabled = true;
-
-      console.debug(
-        `[${TicketAdaptiveCardPositiveActionHandler.name}][DEBUG] ${
-          this.run.name
-        } state.ticket.customFields:\n${JSON.stringify(
-          state.ticket.customFields,
-          null,
-          2
-        )}`
-      );
 
       // Update the state GUI properties to reflect the state of the ticket creation
       state.gui.page = 1;
@@ -113,19 +103,31 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
         $root: cardData,
       });
 
-      // Update the existing adaptive card activity, id'ed by ' handlerContext.context.activity.replyToId'
+      console.debug(
+        `[${TicketAdaptiveCardPositiveActionHandler.name}][DEBUG] ${
+          this.run.name
+        } cardJson:\n${JSON.stringify(
+          cardJson,
+          null,
+          2
+        )}`
+      );
+
+
+      // Update the existing adaptive card activity, id'ed by 'handlerContext.context.activity.replyToId'
       // with the new adaptive card JSON
       const message = MessageFactory.attachment(
         CardFactory.adaptiveCard(cardJson)
       );
-      message.id = handlerContext.context.activity.replyToId;
-      await handlerContext.context.updateActivity(message);
+      // message.id = handlerContext.context.activity.replyToId;
+      // await handlerContext.context.updateActivity(message);
+
+      await handlerContext.context.deleteActivity(handlerContext.context.activity.replyToId);
+      await handlerContext.context.sendActivity(message);
 
       console.debug(
         `[${TicketAdaptiveCardPositiveActionHandler.name}][DEBUG] ${this.run.name}@end[NEXT_PAGE]`
       );
-
-      return;
     } else {
       for (const [key, value] of Object.entries<any>(
         state.ticket.customFields
@@ -145,7 +147,7 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
 
       const customFieldsJson = state.page1.body[4].items;
       for (const customFieldJson of customFieldsJson) {
-        const keyJson: string = customFieldJson.items[0].id;
+        const keyJson: string = customFieldJson.items[1].items?.[0].id || customFieldJson.items[1].id //customFieldJson.items[0].id;
         const cfState: any = state.ticket.customFields[keyJson];
 
         if (cfState.type === "Select") {
@@ -444,6 +446,7 @@ export class TicketAdaptiveCardPositiveActionHandler implements ActionHandler {
             .replace(/\${placeholder}/g, customFieldMap[field.id].placeholder)
             .replace(/\${id}/g, customFieldMap[field.id].id)
             .replace(/\${sequenceId}/g, state.sequenceId)
+            .replace(/\${visible}/g, String(customFieldMap[field.id].visible))
             .replace(/<id>/g, field.id)
         );
       }

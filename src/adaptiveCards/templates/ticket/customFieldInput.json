@@ -5,8 +5,7 @@
             "type": "TextBlock",
             "size": "Medium",
             "weight": "Bolder",
-            "text": "${text}",
-            "id": "${id}"
+            "text": "${text}"
         },
         {
             "type": "Input.Text",

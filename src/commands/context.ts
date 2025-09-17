@@ -8,7 +8,7 @@ import { DialogTurnResult } from "botbuilder-dialogs";
 
 import { DialogManager } from "../dialogs/manager";
 import { BotConfiguration } from "../config/config";
-import { HandlerManager, HandlerMessage, HandlerState } from "./manager";
+import { HandlerMessage, HandlerState } from "./manager";
 
 export interface ConversationReferenceStore {
   [key: string]: Partial<ConversationReference>;

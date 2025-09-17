@@ -24,7 +24,7 @@ import { DialogManager, OAuthStatus } from "../dialogs/manager";
 import {
   AdaptiveCardAction,
   AdaptiveCardActionAuthRefreshDataInput,
-} from "../utils/actions";
+} from "../adaptiveCards/actions/actions";
 import {
   MicrosoftGraphClient,
   TeamChannel,
@@ -47,11 +47,11 @@ export interface HandlerManager {
     data?: any
   ): Promise<any>;
 
-  resolveAndDispatch(
+  resolveAndDispatch<T>(
     context: TurnContext,
     message: string,
     data?: any
-  ): Promise<any>;
+  ): Promise<T>;
 
   handlerState(sequenceId: string): any | null;
   handlerState(sequenceId: string, state: any): void;
@@ -252,7 +252,7 @@ export class DefaultHandlerManager implements HandlerManager {
     commandMessage: HandlerMessage,
     commandMessageContext: HandlerMessageContext,
     _?: any
-  ): Promise<void> {
+  ): Promise<any> {
     console.debug(
       `[${DefaultHandlerManager.name}][TRACE] ${this.doDispatch.name}@start`
     );

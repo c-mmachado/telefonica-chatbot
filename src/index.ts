@@ -1,65 +1,3 @@
-// Imports util to set the default depth for object inspection when logging
-import * as util from "util";
-util.inspect.defaultOptions.depth = null;
-
-// function formatLogMessage(level: string, message: string): string {
-//   const prepareStackTrace = Error.prepareStackTrace;
-//   Error.prepareStackTrace = (_, stack) => stack;
-//   const err = new Error();
-//   const callSite = err.stack[2] as unknown as NodeJS.CallSite;
-
-//   // for (const stackFrame of err.stack) {
-//   //   const callSite = stackFrame as unknown as NodeJS.CallSite;
-//   //   console.log(
-//   //     `[${new Date().toISOString()}][DEBUG] [${callSite.getFileName()}:${callSite.getLineNumber()}] [${
-//   //       callSite.getTypeName() || "Global"
-//   //     }.${
-//   //       callSite.getMethodName() || callSite.getFunctionName() || "<anonymous>"
-//   //     }]`
-//   //   );
-//   // }
-
-//   const callerLine = callSite.getLineNumber();
-//   const callerFile = callSite.getFileName();
-
-//   const typeName = callSite.getTypeName() || "<Global>";
-//   const methodName =
-//     callSite.getMethodName() || callSite.getFunctionName() || "<anonymous>";
-
-//   Error.prepareStackTrace = prepareStackTrace;
-
-//   return `[${new Date().toISOString()}] [${level}] [${callerFile}:${callerLine}] [${typeName}.${methodName}] ${
-//     message ? `- ${message}` : ""
-//   }`;
-// }
-
-// // Overrides the 'console.debug' and  method to add a timestamp to the debug messages
-// console.debug = (message: string, ...optionalParams: any[]): void => {
-//   // Log the debug message to the console
-//   console.log(formatLogMessage("DEBUG", message), ...optionalParams);
-// };
-// console.info = (message: string, ...optionalParams: any[]): void => {
-//   // Log the info message to the console
-//   console.log(formatLogMessage("INFO", message), ...optionalParams);
-// };
-// console.warn = (message: string, ...optionalParams: any[]): void => {
-//   // Log the warning message to the console
-//   console.log(formatLogMessage("WARN", message), ...optionalParams);
-// };
-// // console.error is overridden to add a timestamp and the stack trace of the error
-// console.error = (error: any, ...optionalParams: any[]): void => {
-//   // Check if the error is an instance of Error, if not, convert it to a string
-//   const message = error instanceof Error ? error.message : "";
-//   console.log(formatLogMessage("ERROR", message));
-//   // Log the stack trace of the error
-//   if (optionalParams.length > 0 && optionalParams[0] instanceof Error) {
-//     console.log(
-//       formatLogMessage("ERROR", null),
-//       optionalParams[0].stack || "No stack trace available"
-//     );
-//   }
-// };
-
 // Initializes the logging setup for the application
 import * as _ from "./utils/logging";
 
@@ -95,7 +33,8 @@ import { TicketAdaptiveCardPositiveActionHandler } from "./adaptiveCards/actions
 import { TicketAdaptiveCardNegativeActionHandler } from "./adaptiveCards/actions/ticket/negative";
 import { TicketAdaptiveCardSelectChoiceActionHandler } from "./adaptiveCards/actions/ticket/selectChoice";
 
-import { commandBot } from "./config/initialize";
+// import { commandBot } from "./config/initialize";
+import { adapter } from "./config/adapter";
 import { config } from "./config/config";
 import { apiClient } from "./config/ticket";
 import { logsRepository, techRepository } from "./config/db";
@@ -108,6 +47,7 @@ import { router as graphRouter } from "./api/graph";
 import { router as sharepointRouter } from "./api/sharepoint";
 import { router as dbRouter } from "./api/db";
 import { router as authRouter } from "./api/token";
+
 import { logError } from "./utils/logging";
 
 // Define the state store for your bot.
@@ -211,12 +151,10 @@ const server: Server =
 apiRouter.post(
   "/messages",
   async (req: Request, res: Response): Promise<void> => {
-    await commandBot
-      .requestHandler(req, res, async (context: TurnContext): Promise<any> => {
+    await adapter
+      .process(req, res, async (context: TurnContext): Promise<any> => {
         console.debug(
-          `[${req.method} ${req.url}][DEBUG] req.headers:${
-            req.headers ? "\n" : " "
-          }`,
+          `[${req.method} ${req.url}][DEBUG] req.headers:`,
           req.headers
         );
         return await bot.run(context);
@@ -235,12 +173,7 @@ apiRouter.post(
 
 // Health check endpoint for the express app to verify that the app is running
 apiRouter.get("/health", async (req: Request, res: Response): Promise<void> => {
-  console.debug(
-    `[${req.method} ${req.url}][DEBUG] req.headers:\n${
-      req.headers ? "\n" : "undefined"
-    }`,
-    req.headers
-  );
+  console.debug(`[${req.method} ${req.url}][DEBUG] req.headers:`, req.headers);
 
   // Return a 200 status code to indicate that the bot is running
   res

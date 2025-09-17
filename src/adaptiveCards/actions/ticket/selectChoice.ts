@@ -1,7 +1,13 @@
-import { CardFactory, MessageFactory } from "botbuilder";
-import { TriggerPatterns } from "@microsoft/teamsfx";
+import {
+  Activity,
+  ActivityTypes,
+  CardFactory,
+  InvokeResponse,
+  MessageFactory,
+} from "botbuilder";
+import { InvokeResponseFactory, TriggerPatterns } from "@microsoft/teamsfx";
 
-import * as ACData from "adaptivecards-templating";
+import * as ACTemplating from "adaptivecards-templating";
 
 import {
   HandlerMessage,
@@ -14,10 +20,11 @@ import {
   AdaptiveCardActionActivityValue,
   AdaptiveCardActionSelectChoiceData,
   AdaptiveCardTicketCardPageData,
-} from "../../../utils/actions";
+} from "../actions";
 import { APIClient, CustomFieldValue } from "../../../utils/apiClient";
 
 import page0 from "../../templates/ticket/page0.json";
+import { AdaptiveCards } from "../../adaptiveCards";
 
 export class TicketAdaptiveCardSelectChoiceActionHandler
   implements ActionHandler
@@ -30,7 +37,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
     handlerContext: HandlerTurnContext,
     commandMessage: HandlerMessage,
     commandMessageContext?: HandlerMessageContext
-  ): Promise<void> {
+  ): Promise<any> {
     console.debug(
       `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][TRACE] ${this.run.name}@start`
     );
@@ -48,149 +55,98 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
     }
 
     // Get the choiceId from the action data
-    const choiceType: string = actionData?.choice;
-    const page: number = actionData.gui.page;
+    // const choiceType: string = actionData?.choice;
+    const page: number = state.gui.page;
 
     console.debug(
       `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this.run.name} page: ${page}`
     );
 
-    if (page === 0) {
-      // Update the corresponding state property based on the 'choiceType'
-      switch (choiceType) {
-        case "ticketStateChoiceSet":
-          await this._selectChoice(state, activityValue, choiceType);
-          break;
-        case "ticketCategoryChoiceSet":
-          await this._selectChoice(state, activityValue, choiceType);
-          break;
-      }
+    // For custom fields, we need to update the state with the selected choice
+    const customFieldId: string = actionData.choice;
+    await this._selectCustomFieldChoice(state, activityValue, customFieldId);
 
-      const enabled: boolean =
-        Boolean(state.ticket.ticketStateChoiceSet.value) &&
-        Boolean(state.ticket.ticketCategoryChoiceSet.value);
+    // Check if all custom fields are filled in and if the create button should be enabled
+    let enabled: boolean = true;
+    const customFields = state.page1.body[4].items;
+    for (const item of customFields) {
+      const key = item.items[1].items?.[0].id || item.items[1].id; // item.items[0].id;
+      const field = state.ticket.customFields[key];
 
       console.debug(
-        `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this.run.name} enabled: ${enabled}`
+        `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this.run.name} field.id: ${field.id}, field.value: ${field.value}`
       );
 
-      if (enabled) {
-        actionData.gui.buttons.create.enabled = enabled;
+      // If the field is required and has no value, we cannot enable the create button
+      if (field.required && !field.value && field.choices?.length > 0) {
+        enabled = false;
+        break;
       }
-    } else {
-      // For custom fields, we need to update the state with the selected choice
-      const customFieldId: string = actionData.choice;
-      await this._selectCustomFieldChoice(state, activityValue, customFieldId);
-
-      // Check if all custom fields are filled in and if the create button should be enabled
-      let enabled: boolean = true;
-      const customFields = state.page1.body[4].items;
-      for (const item of customFields) {
-        const key = item.items[0].id;
-        const field = state.ticket.customFields[key];
-
-        console.debug(
-          `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this.run.name} field.id: ${field.id}, field.value: ${field.value}`
-        );
-
-        // If the field is required and has no value, we cannot enable the create button
-        if (field.required && !field.value && field.choices?.length > 0) {
-          enabled = false;
-          break;
-        }
-      }
-      // Update the create button state based on the custom fields validation
-      state.gui.buttons.create.enabled = enabled;
-
-      console.debug(
-        `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this.run.name} enabled: ${enabled}`
-      );
-
-      // console.debug`[${
-      //   TicketAdaptiveCardSelectChoiceActionHandler.name
-      // }][DEBUG] ${this.run.name} state.page1:\n${JSON.stringify(
-      //   state.page1,
-      //   null,
-      //   2
-      // )}`;
-
-      // Update the GUI properties of the card to reflect the state of the ticket creation
-      const cardData: AdaptiveCardTicketCardPageData = {
-        sequenceId: state.sequenceId,
-        gui: state.gui,
-      };
-
-      // Expands the adaptive card template with the data provided
-      const cardJson = new ACData.Template(state.page1).expand({
-        $root: cardData,
-      });
-
-      // console.debug(
-      //   `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${
-      //     this.run.name
-      //   } cardJson:\n${JSON.stringify(cardJson, null, 2)}`
-      // );
-
-      // Update the card with the ticket information that was just submitted
-      const message = MessageFactory.attachment(
-        CardFactory.adaptiveCard(cardJson)
-      );
-      message.id = handlerContext.context.activity.replyToId;
-      await handlerContext.context.updateActivity(message);
-
-      return;
     }
+    // Update the create button state based on the custom fields validation
+    state.gui.buttons.create.enabled = enabled;
+
+    console.debug(
+      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this.run.name} enabled: ${enabled}`
+    );
+
+    // console.debug`[${
+    //   TicketAdaptiveCardSelectChoiceActionHandler.name
+    // }][DEBUG] ${this.run.name} state.page1:\n${JSON.stringify(
+    //   state.page1,
+    //   null,
+    //   2
+    // )}`;
 
     // Update the GUI properties of the card to reflect the state of the ticket creation
     const cardData: AdaptiveCardTicketCardPageData = {
       sequenceId: state.sequenceId,
-      ticket: state.ticket,
-      gui: actionData.gui,
+      gui: state.gui,
     };
 
     // Expands the adaptive card template with the data provided
-    const cardJson = new ACData.Template(page0).expand({
+    const cardJson = new ACTemplating.Template(state.page1).expand({
       $root: cardData,
     });
+
+    console.debug(
+      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${
+        this.run.name
+      } cardJson:\n${JSON.stringify(cardJson, null, 2)}`
+    );
 
     // Update the card with the ticket information that was just submitted
     const message = MessageFactory.attachment(
       CardFactory.adaptiveCard(cardJson)
     );
+
+    // let textMessage = MessageFactory.text(" ");
+    // textMessage.id = handlerContext.context.activity.replyToId;
+    // await handlerContext.context.updateActivity(textMessage);
+
+    // let invokeResponse = InvokeResponseFactory.adaptiveCard(
+    //   CardFactory.adaptiveCard(cardJson)
+    // );
+    // await handlerContext.context.sendActivity({
+    //   type: ActivityTypes.InvokeResponse,
+    //   value: message,
+    // } satisfies Partial<Activity>);
+
     message.id = handlerContext.context.activity.replyToId;
     await handlerContext.context.updateActivity(message);
+
+    await handlerContext.context.deleteActivity(
+      handlerContext.context.activity.replyToId
+    );
+    await handlerContext.context.sendActivity(message);
+
+    // AdaptiveCards.updateCard(handlerContext.context, cardJson);
 
     console.debug(
       `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][TRACE] ${this.run.name}@end`
     );
-  }
 
-  private async _selectChoice(
-    state: HandlerState,
-    activityValue: AdaptiveCardActionActivityValue,
-    choiceSet: string
-  ): Promise<void> {
-    console.debug(
-      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][TRACE] ${this._selectChoice.name}@start`
-    );
-
-    const choiceValue: string = activityValue[choiceSet];
-    state.ticket[choiceSet].value = choiceValue;
-    state.ticket.ticketCategoryChoiceSet.required = true;
-
-    console.debug(
-      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._selectChoice.name} choiceValue: ${choiceValue}`
-    );
-
-    console.debug(
-      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${
-        this._selectChoice.name
-      } handlerState.ticket:\n${JSON.stringify(state.ticket, null, 2)}`
-    );
-
-    console.debug(
-      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][TRACE] ${this._selectChoice.name}@end`
-    );
+    return cardJson;
   }
 
   private async _selectCustomFieldChoice(
@@ -217,22 +173,29 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
 
       const customFieldsJson = state.page1.body[4].items;
       for (const customFieldJson of customFieldsJson) {
-        const keyJson: string = customFieldJson.items[0].id;
+        const keyJson: string =
+          customFieldJson.items[1].items?.[0].id || customFieldJson.items[1].id; // customFieldJson.items[0].id;
 
         if (keyJson === customFieldId) {
           console.debug(
-            `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._selectCustomFieldChoice.name} Resetting field: ${keyJson}`
+            `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._selectCustomFieldChoice.name} Resetting field:`,
+            keyJson
           );
 
           customFieldState.value = "";
 
           if (customFieldJson.items[1].items) {
+            delete customFieldJson.items[1].items[0].text; // = ""
+
             customFieldJson.items[1].items[0].type = "Input.ChoiceSet";
-            customFieldJson.items[1].items[0].text = "";
             customFieldJson.items[1].items[0].value = "";
+            customFieldJson.items[1].items[0].placeholder =
+              customFieldState.placeholder;
             customFieldJson.items[1].items[0].choices =
               customFieldState.choices;
+            // customFieldJson.isVisible = true;
             customFieldJson.items[1].items[0].isRequired = true;
+            customFieldJson.items[1].items[0].isMultiSelect = false;
           }
         }
       }
@@ -262,7 +225,8 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
 
     const customFieldsJson = state.page1.body[4].items;
     for (const customFieldJson of customFieldsJson) {
-      const keyJson: string = customFieldJson.items[0].id;
+      const keyJson: string =
+        customFieldJson.items[1].items?.[0].id || customFieldJson.items[1].id; // customFieldJson.items[0].id;
       const currentFieldState: any = state.ticket.customFields[keyJson];
 
       // Update the field value in the state with the "auto" inputs returned by the adaptive card
@@ -294,8 +258,13 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
           // item.items[1].items[0].isRequired = true;
           customFieldJson.items[1].items[0].type = "TextBlock";
           customFieldJson.items[1].items[0].text = currentFieldState.value;
-          customFieldJson.items[1].items[0].value = currentFieldState.value;
-          customFieldJson.items[1].items[0].isRequired = true;
+
+          delete customFieldJson.items[1].items[0].value; // = currentFieldState.value;
+          delete customFieldJson.items[1].items[0].isRequired; // = true
+          // customFieldJson.isVisible  = true
+          delete customFieldJson.items[1].items[0].choices;
+          delete customFieldJson.items[1].items[0].placeholder;
+          delete customFieldJson.items[1].items[0].isMultiSelect;
         }
       }
     }
@@ -325,7 +294,8 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
     );
 
     console.debug(
-      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} customFieldId: ${customFieldId}`
+      `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} customFieldId:`,
+      customFieldId
     );
 
     // Once a field value changes all other fields that are 'basedOn' this field
@@ -334,12 +304,16 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
       const customFieldState = state.ticket.customFields[key];
 
       console.debug(
-        `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} field.id: ${customFieldState.id}, field.basedOn: ${customFieldState.basedOn}`
+        `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} field.id:`,
+        customFieldState.id,
+        `, field.basedOn:`,
+        customFieldState.basedOn
       );
 
       if (customFieldState.basedOn === customFieldId) {
         console.debug(
-          `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} Resetting field: ${customFieldState.id}`
+          `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} Resetting field:`,
+          customFieldState.id
         );
 
         let choices: { title: string; value: string }[] = [];
@@ -354,9 +328,8 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
         }
 
         console.debug(
-          `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${
-            this._resetField.name
-          } choices: ${JSON.stringify(choices, null, 2)}`
+          `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} choices:`,
+          choices
         );
 
         customFieldState.value = "";
@@ -364,18 +337,25 @@ export class TicketAdaptiveCardSelectChoiceActionHandler
 
         const customFieldsJson = state.page1.body[4].items;
         for (const customFieldJson of customFieldsJson) {
-          const keyJson: string = customFieldJson.items[0].id;
+          const keyJson: string =
+            customFieldJson.items[1].items?.[0].id ||
+            customFieldJson.items[1].id; // customFieldJson.items[0].id;
 
           if (keyJson === String(customFieldState.id)) {
             console.debug(
-              `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} Updating field: ${keyJson}`
+              `[${TicketAdaptiveCardSelectChoiceActionHandler.name}][DEBUG] ${this._resetField.name} Updating field:`,
+              keyJson
             );
+
+            delete customFieldJson.items[1].items[0].text; // = "";
 
             customFieldJson.items[1].items[0].type = "Input.ChoiceSet";
             customFieldJson.items[1].items[0].choices = choices;
             customFieldJson.items[1].items[0].value = "";
-            customFieldJson.items[1].items[0].text = "";
-            customFieldJson.items[1].items[0].isRequired = false;
+            customFieldJson.items[1].items[0].placeholder =
+              customFieldState.placeholder;
+            customFieldJson.items[1].items[0].isRequired = choices.length > 0;
+            // customFieldJson.isVisible = choices.length > 0;
             customFieldJson.items[1].selectAction.isEnabled =
               choices.length > 0;
             break;

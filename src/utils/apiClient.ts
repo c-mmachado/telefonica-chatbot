@@ -2,7 +2,7 @@ import { BotConfiguration } from "../config/config";
 import { MicrosoftGraphClient, TeamChannelMessage } from "./graphClient";
 import { HttpContentTypes, HttpHeaders, HttpMethods } from "./http";
 import { logError } from "./logging";
-import { Required, TypeUtils } from "./types";
+import { Required } from "./misc";
 
 export type HyperlinkEntity = Partial<{
   id: string;
@@ -283,7 +283,7 @@ export class APIClient {
       this._cookie = await this.login();
     }
 
-    if (TypeUtils.isString(queue)) {
+    if (typeof queue === "string") {
       // If the queue is a string, convert it to a hyperlink entity
       queue = {
         id: queue,
