@@ -1,0 +1,1613 @@
+openapi: 3.0.3
+info:
+  title: Request Tracker (RT) REST 2.0 API
+  description: |
+    This OpenAPI specification is generated based on the official RT REST 2.0 documentation from https://docs.bestpractical.com/rt/5.0.4/RT/REST2.html.
+    It includes endpoints for tickets, queues, users, groups, and more, with authentication methods as described in the Authentication section.
+    Use HTTPS for all requests. The API supports JSON, pagination, conditional requests, and permission-based hyperlinks.
+    Note: This is a reverse-engineered spec and may not cover all edge cases; refer to official docs for details.
+  version: 2.0.0
+servers:
+  - url: https://pre-epg-vmticket-01.hi.inet
+    description: Development RT Server
+tags:
+  - name: General
+    description: General system and root endpoints
+  - name: Queues
+    description: Endpoints for managing queues
+  - name: Tickets
+    description: Endpoints for managing tickets, including bulk operations
+  - name: Users
+    description: Endpoints for managing users
+  - name: Groups
+    description: Endpoints for managing groups
+  - name: Custom Fields
+    description: Endpoints for managing custom fields
+  - name: Custom Roles
+    description: Endpoints for managing custom roles
+  - name: Assets
+    description: Endpoints for managing assets (requires Assets extension)
+  - name: Catalogs
+    description: Endpoints for managing asset catalogs (requires Assets extension)
+  - name: Articles
+    description: Endpoints for managing articles (requires Articles extension)
+  - name: Classes
+    description: Endpoints for managing article classes (requires Articles extension)
+  - name: Transactions
+    description: Endpoints for managing transactions (history logs)
+  - name: Attachments
+    description: Endpoints for managing attachments
+  - name: Saved Searches
+    description: Endpoints for managing saved searches
+security:
+  - TokenAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+components:
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Format: token <your_token>. Alternatively, use query parameter ?token=<your_token>.'
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: Use RT username and password.
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: RT_SID
+      description: Reuse session cookie from web login (for browser-based clients).
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    Collection:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+        per_page:
+          type: integer
+        next_page:
+          type: string
+        prev_page:
+          type: string
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              id:
+                type: string
+              _url:
+                type: string
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: ticket
+        _url:
+          type: string
+        Subject:
+          type: string
+        Status:
+          type: string
+        Queue:
+          type: string
+        Owner:
+          type: string
+        Creator:
+          type: string
+        Created:
+          type: string
+          format: date-time
+        LastUpdated:
+          type: string
+          format: date-time
+        Priority:
+          type: integer
+        Requestors:
+          type: array
+          items:
+            type: string
+        Cc:
+          type: array
+          items:
+            type: string
+        AdminCc:
+          type: array
+          items:
+            type: string
+        CustomFields:
+          type: object
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Queue:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: queue
+        _url:
+          type: string
+        Name:
+          type: string
+        Description:
+          type: string
+        CorrespondAddress:
+          type: string
+        CommentAddress:
+          type: string
+        Disabled:
+          type: boolean
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: user
+        _url:
+          type: string
+        Name:
+          type: string
+        EmailAddress:
+          type: string
+        RealName:
+          type: string
+        Disabled:
+          type: boolean
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: group
+        _url:
+          type: string
+        Name:
+          type: string
+        Disabled:
+          type: boolean
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    CustomField:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: customfield
+        _url:
+          type: string
+        Name:
+          type: string
+        Type:
+          type: string
+        Disabled:
+          type: boolean
+        Values:
+          type: array
+          items:
+            type: object
+    CustomRole:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: customrole
+        _url:
+          type: string
+        Name:
+          type: string
+        Disabled:
+          type: boolean
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: asset
+        _url:
+          type: string
+        Name:
+          type: string
+        Status:
+          type: string
+        Catalog:
+          type: string
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Catalog:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: catalog
+        _url:
+          type: string
+        Name:
+          type: string
+        Disabled:
+          type: boolean
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Article:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: article
+        _url:
+          type: string
+        Name:
+          type: string
+        Summary:
+          type: string
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: class
+        _url:
+          type: string
+        Name:
+          type: string
+        Disabled:
+          type: boolean
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: transaction
+        _url:
+          type: string
+        Type:
+          type: string
+        Field:
+          type: string
+        OldValue:
+          type: string
+        NewValue:
+          type: string
+        Creator:
+          type: string
+        Created:
+          type: string
+          format: date-time
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: attachment
+        _url:
+          type: string
+        Filename:
+          type: string
+        ContentType:
+          type: string
+        Content:
+          type: string
+          description: Base64 encoded content
+        TransactionId:
+          type: string
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+    Search:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: search
+        _url:
+          type: string
+        Description:
+          type: string
+        _hyperlinks:
+          type: array
+          items:
+            type: object
+paths:
+  /:
+    get:
+      tags:
+        - General
+      summary: API Root
+      description: Returns hyperlinks to available resources.
+      responses:
+        '200':
+          description: Hyperlinks to resources
+          content:
+            application/json:
+              schema:
+                type: object
+  /rt:
+    get:
+      tags:
+        - General
+      summary: System Information
+      description: Returns RT system information.
+      responses:
+        '200':
+          description: System info
+          content:
+            application/json:
+              schema:
+                type: object
+  /queues/all:
+    get:
+      tags:
+        - Queues
+      summary: List All Queues
+      parameters:
+        - name: find_disabled_rows
+          in: query
+          schema:
+            type: boolean
+          description: Include disabled queues if true
+      responses:
+        '200':
+          description: Collection of queues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /queues:
+    get:
+      tags:
+        - Queues
+      summary: Search Queues
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: JSON-encoded search query
+        - name: orderby
+          in: query
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection of queues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    post:
+      tags:
+        - Queues
+      summary: Create Queue
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Queue'
+      responses:
+        '201':
+          description: Created queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+  /queue/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Queues
+      summary: Get Queue by ID
+      responses:
+        '200':
+          description: Queue details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+    put:
+      tags:
+        - Queues
+      summary: Update Queue
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Queue'
+      responses:
+        '200':
+          description: Update messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    delete:
+      tags:
+        - Queues
+      summary: Delete Queue
+      responses:
+        '200':
+          description: Deleted
+  /queue/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Queues
+      summary: Get Queue by Name
+      responses:
+        '200':
+          description: Queue details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+    put:
+      tags:
+        - Queues
+      summary: Update Queue by Name
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Queue'
+      responses:
+        '200':
+          description: Update messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Search Tickets
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: TicketSQL query
+        - name: format
+          in: query
+          schema:
+            type: string
+        - name: orderby
+          in: query
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection of tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    post:
+      tags:
+        - Tickets
+      summary: Create Ticket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        '201':
+          description: Created ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+  /ticket/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Tickets
+      summary: Get Ticket
+      responses:
+        '200':
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+    put:
+      tags:
+        - Tickets
+      summary: Update Ticket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        '200':
+          description: Update messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    delete:
+      tags:
+        - Tickets
+      summary: Delete Ticket
+      responses:
+        '200':
+          description: Deleted
+  /ticket/{id}/correspond:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Tickets
+      summary: Add Correspondence to Ticket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Content:
+                  type: string
+                ContentType:
+                  type: string
+                Attachments:
+                  type: array
+                  items:
+                    type: object
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                JSON:
+                  type: string
+                Attachments:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Added correspondence
+  /ticket/{id}/comment:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - Tickets
+      summary: Add Comment to Ticket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Content:
+                  type: string
+                ContentType:
+                  type: string
+                Attachments:
+                  type: array
+                  items:
+                    type: object
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                JSON:
+                  type: string
+                Attachments:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Added comment
+  /ticket/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Tickets
+      summary: Get Ticket History
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /ticket/{id}/attachments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Tickets
+      summary: Get Ticket Attachments
+      responses:
+        '200':
+          description: Collection of attachments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /tickets/bulk:
+    put:
+      tags:
+        - Tickets
+      summary: Bulk Update Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Ticket'
+      responses:
+        '200':
+          description: Update results
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Search Users
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    post:
+      tags:
+        - Users
+      summary: Create User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /user/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Users
+      summary: Get User by ID
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      tags:
+        - Users
+      summary: Update User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Update messages
+    delete:
+      tags:
+        - Users
+      summary: Disable User
+      responses:
+        '200':
+          description: Disabled
+  /user/{username}:
+    parameters:
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Users
+      summary: Get User by Username
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /groups:
+    get:
+      tags:
+        - Groups
+      summary: Search Groups
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection of groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    post:
+      tags:
+        - Groups
+      summary: Create Group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '201':
+          description: Created group
+  /group/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Groups
+      summary: Get Group
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+    put:
+      tags:
+        - Groups
+      summary: Update Group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Groups
+      summary: Disable Group
+      responses:
+        '200':
+          description: Disabled
+  /customfields:
+    get:
+      tags:
+        - Custom Fields
+      summary: Search Custom Fields
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+    post:
+      tags:
+        - Custom Fields
+      summary: Create Custom Field
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomField'
+      responses:
+        '201':
+          description: Created
+  /customfield/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Custom Fields
+      summary: Get Custom Field
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomField'
+    put:
+      tags:
+        - Custom Fields
+      summary: Update Custom Field
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomField'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Custom Fields
+      summary: Disable Custom Field
+      responses:
+        '200':
+          description: Disabled
+  /customroles:
+    get:
+      tags:
+        - Custom Roles
+      summary: Search Custom Roles
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+    post:
+      tags:
+        - Custom Roles
+      summary: Create Custom Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomRole'
+      responses:
+        '201':
+          description: Created
+  /customrole/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Custom Roles
+      summary: Get Custom Role
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomRole'
+    put:
+      tags:
+        - Custom Roles
+      summary: Update Custom Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomRole'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Custom Roles
+      summary: Disable Custom Role
+      responses:
+        '200':
+          description: Disabled
+  /assets:
+    get:
+      tags:
+        - Assets
+      summary: Search Assets
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    post:
+      tags:
+        - Assets
+      summary: Create Asset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Asset'
+      responses:
+        '201':
+          description: Created
+  /asset/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Assets
+      summary: Get Asset
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+    put:
+      tags:
+        - Assets
+      summary: Update Asset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Asset'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Assets
+      summary: Delete Asset
+      responses:
+        '200':
+          description: Deleted
+  /asset/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Assets
+      summary: Get Asset History
+      responses:
+        '200':
+          description: Collection of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /catalogs:
+    get:
+      tags:
+        - Catalogs
+      summary: Search Catalogs
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+    post:
+      tags:
+        - Catalogs
+      summary: Create Catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+      responses:
+        '201':
+          description: Created
+  /catalog/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Catalogs
+      summary: Get Catalog
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+    put:
+      tags:
+        - Catalogs
+      summary: Update Catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Catalogs
+      summary: Disable Catalog
+      responses:
+        '200':
+          description: Disabled
+  /catalog/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Catalogs
+      summary: Get Catalog by Name
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+  /articles:
+    get:
+      tags:
+        - Articles
+      summary: Search Articles
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+    post:
+      tags:
+        - Articles
+      summary: Create Article
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Article'
+      responses:
+        '201':
+          description: Created
+  /article/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Articles
+      summary: Get Article
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+    put:
+      tags:
+        - Articles
+      summary: Update Article
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Article'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Articles
+      summary: Delete Article
+      responses:
+        '200':
+          description: Deleted
+  /article/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Articles
+      summary: Get Article History
+      responses:
+        '200':
+          description: Collection
+  /classes:
+    get:
+      tags:
+        - Classes
+      summary: Search Classes
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+    post:
+      tags:
+        - Classes
+      summary: Create Class
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Class'
+      responses:
+        '201':
+          description: Created
+  /class/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Classes
+      summary: Get Class
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+    put:
+      tags:
+        - Classes
+      summary: Update Class
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Class'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Classes
+      summary: Disable Class
+      responses:
+        '200':
+          description: Disabled
+  /class/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Classes
+      summary: Get Class by Name
+      responses:
+        '200':
+          description: Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Search Transactions
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /transaction/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Transactions
+      summary: Get Transaction
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+  /transaction/{id}/attachments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Transactions
+      summary: Get Transaction Attachments
+      responses:
+        '200':
+          description: Collection of attachments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+  /attachments:
+    get:
+      tags:
+        - Attachments
+      summary: Search Attachments
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Collection
+  /attachment/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Attachments
+      summary: Get Attachment
+      responses:
+        '200':
+          description: Attachment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+  /searches:
+    get:
+      tags:
+        - Saved Searches
+      summary: List Saved Searches
+      responses:
+        '200':
+          description: Collection of searches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+    post:
+      tags:
+        - Saved Searches
+      summary: Create Saved Search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Search'
+      responses:
+        '201':
+          description: Created
+  /search/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Saved Searches
+      summary: Get Saved Search
+      responses:
+        '200':
+          description: Search details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Search'
+    put:
+      tags:
+        - Saved Searches
+      summary: Update Saved Search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Search'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags:
+        - Saved Searches
+      summary: Delete Saved Search
+      responses:
+        '200':
+          description: Deleted
