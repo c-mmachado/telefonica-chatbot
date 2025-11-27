@@ -14,143 +14,135 @@ import { normalize } from "path";
 const originalConsole = { ...console };
 
 export const logger: Logger<ILogObj> = new Logger({
-  type: "pretty",
-  name: "RootLogger",
-  hideLogPositionForProduction: false,
-  prettyLogTemplate:
-    "[{{dateIsoStr}}] [{{location}}] [{{name}}] [{{logLevelName}}] ",
-  prettyErrorTemplate: "{{errorName}}: {{errorMessage}}\n{{errorStack}}",
-  prettyErrorStackTemplate: "  • at {{method}} ({{filePathWithLine}})",
-  prettyInspectOptions: {
-    depth: null,
-  },
-  prettyLogStyles: {
-    logLevelName: {
-      "*": ["bold", "black", "bgWhite"],
-      SILLY: ["bold", "black"],
-      TRACE: ["bold", "black"],
-      DEBUG: ["bold", "cyan"],
-      INFO: ["bold", "blue"],
-      WARN: ["bold", "yellow"],
-      ERROR: ["bold", "red"],
-      FATAL: ["bold", "white", "bgRed"],
+    type: "pretty",
+    name: "RootLogger",
+    hideLogPositionForProduction: false,
+    prettyLogTemplate: "[{{dateIsoStr}}] [{{location}}] [{{name}}] [{{logLevelName}}] ",
+    prettyErrorTemplate: "{{errorName}}: {{errorMessage}}\n{{errorStack}}",
+    prettyErrorStackTemplate: "  • at {{method}} ({{filePathWithLine}})",
+    prettyInspectOptions: {
+        depth: null,
     },
-    dateIsoStr: ["dim", "magenta"],
-    name: ["dim", "black"],
-    nameWithDelimiterPrefix: ["dim", "cyan"],
-    nameWithDelimiterSuffix: ["dim", "cyan"],
-    errorName: ["bold", "white", "bgRed"],
-    filePathWithLine: ["bold", "black"],
-    fileNameWithLine: ["yellow"],
-    fileName: ["yellow"],
-    fileLine: ["yellow"],
-    filePath: ["yellow"],
-    location: ["yellow"],
-    runtime: ["dim", "green"],
-    runtimeVersion: ["dim", "green"],
-  } as any,
-  overwrite: {
-    mask: mask,
-    formatLogObj: formatLogObj,
-    addPlaceholders: (
-      logObjMeta: IMeta & Partial<{ runtimeVersion: string }>,
-      placeholderValues: Record<string, string | number>
-    ): void => {
-      // console.log("addPlaceholders called with logObjMeta", logObjMeta);
-      // console.log("placeholderValues", placeholderValues);
+    prettyLogStyles: {
+        logLevelName: {
+            "*": ["bold", "black", "bgWhite"],
+            SILLY: ["bold", "black"],
+            TRACE: ["bold", "black"],
+            DEBUG: ["bold", "cyan"],
+            INFO: ["bold", "blue"],
+            WARN: ["bold", "yellow"],
+            ERROR: ["bold", "red"],
+            FATAL: ["bold", "white", "bgRed"],
+        },
+        dateIsoStr: ["dim", "magenta"],
+        name: ["dim", "black"],
+        nameWithDelimiterPrefix: ["dim", "cyan"],
+        nameWithDelimiterSuffix: ["dim", "cyan"],
+        errorName: ["bold", "white", "bgRed"],
+        filePathWithLine: ["bold", "black"],
+        fileNameWithLine: ["yellow"],
+        fileName: ["yellow"],
+        fileLine: ["yellow"],
+        filePath: ["yellow"],
+        location: ["yellow"],
+        runtime: ["dim", "green"],
+        runtimeVersion: ["dim", "green"],
+    } as any,
+    overwrite: {
+        mask: mask,
+        formatLogObj: formatLogObj,
+        addPlaceholders: (
+            logObjMeta: IMeta & Partial<{ runtimeVersion: string }>,
+            placeholderValues: Record<string, string | number>
+        ): void => {
+            // console.log("addPlaceholders called with logObjMeta", logObjMeta);
+            // console.log("placeholderValues", placeholderValues);
 
-      placeholderValues.location = `${placeholderValues.fileNameWithLine}`; // @${logObjMeta.path?.method || "<unknown>"}
-      // const locationLength = placeholderValues.location.length;
-      // let leftPadding = (50 - locationLength) / 2;
-      // let rightPadding = leftPadding;
-      // if (locationLength % 2 == 0) {
-      //   rightPadding = leftPadding - 1;
-      // }
-      // leftPadding = leftPadding < 0 ? 0 : leftPadding;
-      // rightPadding = rightPadding < 0 ? 0 : rightPadding;
-      // placeholderValues.location = `${placeholderValues.location.padStart(
-      //   leftPadding + locationLength < 50 ? leftPadding + locationLength : 50
-      // )}${" ".repeat(rightPadding)}`;
-      placeholderValues.location = `${placeholderValues.location.padStart(50)}`;
+            placeholderValues.location = `${placeholderValues.fileNameWithLine}`; // @${logObjMeta.path?.method || "<unknown>"}
+            // const locationLength = placeholderValues.location.length;
+            // let leftPadding = (50 - locationLength) / 2;
+            // let rightPadding = leftPadding;
+            // if (locationLength % 2 == 0) {
+            //   rightPadding = leftPadding - 1;
+            // }
+            // leftPadding = leftPadding < 0 ? 0 : leftPadding;
+            // rightPadding = rightPadding < 0 ? 0 : rightPadding;
+            // placeholderValues.location = `${placeholderValues.location.padStart(
+            //   leftPadding + locationLength < 50 ? leftPadding + locationLength : 50
+            // )}${" ".repeat(rightPadding)}`;
+            placeholderValues.location = `${placeholderValues.location.padStart(50)}`;
 
-      const levelLength = logObjMeta.logLevelName.length;
-      let leftPadding = (8 - levelLength) / 2;
-      let rightPadding = leftPadding;
-      if (levelLength % 2 == 0) {
-        rightPadding = leftPadding - 1;
-      }
-      leftPadding = leftPadding < 0 ? 0 : leftPadding;
-      rightPadding = rightPadding < 0 ? 0 : rightPadding;
-      placeholderValues.logLevelName = `${logObjMeta.logLevelName.padStart(
-        leftPadding + levelLength < 8 ? leftPadding + levelLength : 8
-      )}${" ".repeat(rightPadding)}`;
+            const levelLength = logObjMeta.logLevelName.length;
+            let leftPadding = (8 - levelLength) / 2;
+            let rightPadding = leftPadding;
+            if (levelLength % 2 == 0) {
+                rightPadding = leftPadding - 1;
+            }
+            leftPadding = leftPadding < 0 ? 0 : leftPadding;
+            rightPadding = rightPadding < 0 ? 0 : rightPadding;
+            placeholderValues.logLevelName = `${logObjMeta.logLevelName.padStart(
+                leftPadding + levelLength < 8 ? leftPadding + levelLength : 8
+            )}${" ".repeat(rightPadding)}`;
+        },
+        transportFormatted: (
+            logMetaMarkup: string,
+            logArgs: unknown[],
+            logErrors: string[],
+            _logMeta: IMeta | undefined,
+            settings: ISettings<ILogObj> | undefined
+        ): void => {
+            const logErrorsStr = (logErrors.length > 0 && logArgs.length > 0 ? "\n" : "") + logErrors.join("\n");
+            if (!settings) {
+                originalConsole.log(logMetaMarkup + util.format(...logArgs) + logErrorsStr);
+                return;
+            }
+
+            settings.prettyInspectOptions.colors = settings?.stylePrettyLogs;
+            originalConsole.log(
+                logMetaMarkup + util.formatWithOptions(settings?.prettyInspectOptions ?? {}, ...logArgs) + logErrorsStr
+            );
+        },
     },
-    transportFormatted: (
-      logMetaMarkup: string,
-      logArgs: unknown[],
-      logErrors: string[],
-      settings: ISettings<ILogObj>
-    ): void => {
-      const logErrorsStr =
-        (logErrors.length > 0 && logArgs.length > 0 ? "\n" : "") +
-        logErrors.join("\n");
-      settings.prettyInspectOptions.colors = settings.stylePrettyLogs;
-      originalConsole.log(
-        logMetaMarkup +
-          util.formatWithOptions(settings.prettyInspectOptions, ...logArgs) +
-          logErrorsStr
-      );
-    },
-  },
 });
 // (logger as any).runtime.prettyFormatLogObj = prettyFormatLogObj;
 
 function mask(args: unknown[]): unknown[] {
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === null || args[i] === undefined || args[i] instanceof Error) {
-      // Skip null or undefined values and Error instances
-      continue;
-    } else if (typeof args[i] === "object" || args[i] instanceof Object) {
-      args[i] = maskObject(
-        args[i],
-        /.*(?:password|secret|token|authorization).*/gi,
-        "******"
-      );
-    } else if (Array.isArray(args[i])) {
-      args[i] = mask(args[i] as unknown[]);
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === null || args[i] === undefined || args[i] instanceof Error) {
+            // Skip null or undefined values and Error instances
+            continue;
+        } else if (typeof args[i] === "object" || args[i] instanceof Object) {
+            args[i] = maskObject(args[i], /.*(?:password|secret|token|authorization).*/gi, "******");
+        } else if (Array.isArray(args[i])) {
+            args[i] = mask(args[i] as unknown[]);
+        }
     }
-  }
-  return (logger as any)._mask(args);
+    return (logger as any)._mask(args);
 }
 
-function formatLogObj(
-  maskedArgs: unknown[],
-  settings: ISettings<ILogObj>
-): { args: unknown[]; errors: string[] } {
-  // console.log("formatLogObj called with maskedArgs", maskedArgs);
-  // console.log("settings", settings);
-  // for (let i = 0; i < maskedArgs.length; i++) {
-  //   let arg: unknown = maskedArgs[i];
-  //   maskedArgs[i] = _colorString(arg);
-  // }
-  // TODO: This call will format error messages by merging all its properties into a single string, modify it to only show error name, error message and stack trace
-  // return (logger as any).runtime.prettyFormatLogObj(maskedArgs, settings);
+function formatLogObj(maskedArgs: unknown[], settings: ISettings<ILogObj>): { args: unknown[]; errors: string[] } {
+    // console.log("formatLogObj called with maskedArgs", maskedArgs);
+    // console.log("settings", settings);
+    // for (let i = 0; i < maskedArgs.length; i++) {
+    //   let arg: unknown = maskedArgs[i];
+    //   maskedArgs[i] = _colorString(arg);
+    // }
+    // TODO: This call will format error messages by merging all its properties into a single string, modify it to only show error name, error message and stack trace
+    // return (logger as any).runtime.prettyFormatLogObj(maskedArgs, settings);
 
-  return maskedArgs.reduce(
-    (result: { args: unknown[]; errors: string[] }, arg: unknown) => {
-      isError(arg)
-        ? result.errors.push(prettyFormatErrorObj(arg, settings))
-        : result.args.push(_colorString(arg));
-      return result;
-    },
-    { args: [], errors: [] }
-  );
+    return maskedArgs.reduce(
+        (result: { args: unknown[]; errors: string[] }, arg: unknown) => {
+            isError(arg)
+                ? result.errors.push(prettyFormatErrorObj(arg, settings))
+                : result.args.push(_colorString(arg));
+            return result;
+        },
+        { args: [], errors: [] }
+    );
 }
 
 function isError(e: unknown): e is Error {
-  return types?.isNativeError != null
-    ? types.isNativeError(e)
-    : e instanceof Error;
+    return types?.isNativeError != null ? types.isNativeError(e) : e instanceof Error;
 }
 
 // function prettyFormatLogObj(
@@ -168,226 +160,186 @@ function isError(e: unknown): e is Error {
 //   );
 // }
 
-function prettyFormatErrorObj(
-  error: Error,
-  settings: ISettings<ILogObj>
-): string {
-  const errorStackStr = getErrorTrace(error).map((stackFrame: IStackFrame) => {
-    return _formatTemplate(
-      settings,
-      settings.prettyErrorStackTemplate,
-      { ...stackFrame },
-      true
-    );
-  });
-  const placeholderValuesError = {
-    errorName: ` ${error.name} `,
-    errorMessage: _colorString(error.message),
-    // Object.getOwnPropertyNames(error)
-    //   .reduce((result: string[], key: string) => {
-    //     if (key !== "stack") {
-    //       result.push(error[key as keyof Error] as string);
-    //     }
-    //     return result;
-    //   }, [])
-    //   .join(", "),
-    errorStack: errorStackStr.join("\n"),
-  };
-  return _formatTemplate(
-    settings,
-    settings.prettyErrorTemplate,
-    placeholderValuesError
-  );
+function prettyFormatErrorObj(error: Error, settings: ISettings<ILogObj>): string {
+    const errorStackStr = getErrorTrace(error).map((stackFrame: IStackFrame) => {
+        return _formatTemplate(settings, settings.prettyErrorStackTemplate, { ...stackFrame }, true);
+    });
+    const placeholderValuesError = {
+        errorName: ` ${error.name} `,
+        errorMessage: _colorString(error.message),
+        // Object.getOwnPropertyNames(error)
+        //   .reduce((result: string[], key: string) => {
+        //     if (key !== "stack") {
+        //       result.push(error[key as keyof Error] as string);
+        //     }
+        //     return result;
+        //   }, [])
+        //   .join(", "),
+        errorStack: errorStackStr.join("\n"),
+    };
+    return _formatTemplate(settings, settings.prettyErrorTemplate, placeholderValuesError);
 }
 
 function getErrorTrace(error: Error): IStackFrame[] {
-  const stackFrames = error?.stack
-    ?.split("\n")
-    ?.reduce((result: IStackFrame[], line: string): IStackFrame[] => {
-      if (line.includes("    at ")) {
-        result.push(stackLineToStackFrame(line));
-      }
-      return result;
+    const stackFrames = error?.stack?.split("\n")?.reduce((result: IStackFrame[], line: string): IStackFrame[] => {
+        if (line.includes("    at ")) {
+            result.push(stackLineToStackFrame(line));
+        }
+        return result;
     }, []);
-  return stackFrames!;
+    return stackFrames!;
 }
 
 function stackLineToStackFrame(line: string): IStackFrame {
-  const pathResult: IStackFrame = {
-    fullFilePath: undefined,
-    fileName: undefined,
-    fileNameWithLine: undefined,
-    fileColumn: undefined,
-    fileLine: undefined,
-    filePath: undefined,
-    filePathWithLine: undefined,
-    method: undefined,
-  };
-  if (line != null && line.includes("    at ")) {
-    line = line.replace(/^\s+at\s+/gm, "");
-    const errorStackLine = line.split(" (");
-    const fullFilePath =
-      line?.slice(-1) === ")" ? line?.match(/\(([^)]+)\)/)?.[1] : line;
-    const pathArray = fullFilePath?.includes(":")
-      ? fullFilePath
-          ?.replace("file://", "")
-          ?.replace(process.cwd(), "")
-          ?.split(":")
-      : undefined;
-    const fileColumn = pathArray?.pop();
-    const fileLine = pathArray?.pop();
-    const filePath = pathArray?.pop();
-    const filePathWithLine = normalize(`${filePath}:${fileLine}`);
-    const fileName = filePath?.split("/")?.pop();
-    const fileNameWithLine = `${fileName}:${fileLine}`;
-    if (filePath != null && filePath.length > 0) {
-      pathResult.fullFilePath = fullFilePath;
-      pathResult.fileName = fileName;
-      pathResult.fileNameWithLine = fileNameWithLine;
-      pathResult.fileColumn = fileColumn;
-      pathResult.fileLine = fileLine;
-      pathResult.filePath = filePath;
-      pathResult.filePathWithLine = filePathWithLine;
-      pathResult.method =
-        errorStackLine?.[1] != null ? errorStackLine?.[0] : undefined;
+    const pathResult: IStackFrame = {
+        fullFilePath: undefined,
+        fileName: undefined,
+        fileNameWithLine: undefined,
+        fileColumn: undefined,
+        fileLine: undefined,
+        filePath: undefined,
+        filePathWithLine: undefined,
+        method: undefined,
+    };
+    if (line != null && line.includes("    at ")) {
+        line = line.replace(/^\s+at\s+/gm, "");
+        const errorStackLine = line.split(" (");
+        const fullFilePath = line?.slice(-1) === ")" ? line?.match(/\(([^)]+)\)/)?.[1] : line;
+        const pathArray = fullFilePath?.includes(":")
+            ? fullFilePath?.replace("file://", "")?.replace(process.cwd(), "")?.split(":")
+            : undefined;
+        const fileColumn = pathArray?.pop();
+        const fileLine = pathArray?.pop();
+        const filePath = pathArray?.pop();
+        const filePathWithLine = normalize(`${filePath}:${fileLine}`);
+        const fileName = filePath?.split("/")?.pop();
+        const fileNameWithLine = `${fileName}:${fileLine}`;
+        if (filePath != null && filePath.length > 0) {
+            pathResult.fullFilePath = fullFilePath;
+            pathResult.fileName = fileName;
+            pathResult.fileNameWithLine = fileNameWithLine;
+            pathResult.fileColumn = fileColumn;
+            pathResult.fileLine = fileLine;
+            pathResult.filePath = filePath;
+            pathResult.filePathWithLine = filePathWithLine;
+            pathResult.method = errorStackLine?.[1] != null ? errorStackLine?.[0] : undefined;
+        }
     }
-  }
-  return pathResult;
+    return pathResult;
 }
 
 type Style = string | string[] | Record<string, string | string[]>;
 
 function _formatTemplate(
-  settings: ISettings<ILogObj>,
-  template: string | undefined,
-  values: Record<string, unknown>,
-  hideUnsetPlaceholder: boolean = false
+    settings: ISettings<ILogObj>,
+    template: string | undefined,
+    values: Record<string, unknown>,
+    hideUnsetPlaceholder: boolean = false
 ) {
-  const templateString = String(template);
+    const templateString = String(template);
 
-  const ansiColorWrap = (placeholderValue: string, code: number[]) =>
-    `\u001b[${code[0]}m${placeholderValue}\u001b[${code[1]}m`;
+    const ansiColorWrap = (placeholderValue: string, code: number[]) =>
+        `\u001b[${code[0]}m${placeholderValue}\u001b[${code[1]}m`;
 
-  const styleWrap = (value: string, style: Style): string => {
-    if (style != null && typeof style === "string") {
-      return ansiColorWrap(value, (prettyLogStyles as any)[style]);
-    } else if (style != null && Array.isArray(style)) {
-      return style.reduce(
-        (prevValue: string, thisStyle: string) =>
-          styleWrap(prevValue, thisStyle),
-        value
-      );
-    } else {
-      if (style != null && style[value.trim()] != null) {
-        return styleWrap(value, style[value.trim()]);
-      } else if (style != null && style["*"] != null) {
-        return styleWrap(value, style["*"]);
-      } else {
-        return value;
-      }
-    }
-  };
+    const styleWrap = (value: string, style: Style): string => {
+        if (style != null && typeof style === "string") {
+            return ansiColorWrap(value, (prettyLogStyles as any)[style]);
+        } else if (style != null && Array.isArray(style)) {
+            return style.reduce((prevValue: string, thisStyle: string) => styleWrap(prevValue, thisStyle), value);
+        } else {
+            if (style != null && style[value.trim()] != null) {
+                return styleWrap(value, style[value.trim()]);
+            } else if (style != null && style["*"] != null) {
+                return styleWrap(value, style["*"]);
+            } else {
+                return value;
+            }
+        }
+    };
 
-  const defaultStyle = null;
-  return templateString.replace(
-    /{{(.+?)}}/g,
-    (_: string, placeholder: string) => {
-      const value =
-        values[placeholder] != null
-          ? String(values[placeholder])
-          : hideUnsetPlaceholder
-          ? ""
-          : _;
-      return settings.stylePrettyLogs
-        ? styleWrap(
-            value,
-            (settings?.prettyLogStyles as any)?.[placeholder] ?? defaultStyle
-          ) + ansiColorWrap("", prettyLogStyles.reset)
-        : value;
-    }
-  );
+    const defaultStyle = null;
+    return templateString.replace(/{{(.+?)}}/g, (_: string, placeholder: string) => {
+        const value = values[placeholder] != null ? String(values[placeholder]) : hideUnsetPlaceholder ? "" : _;
+        return settings.stylePrettyLogs
+            ? styleWrap(value, (settings?.prettyLogStyles as any)?.[placeholder] ?? defaultStyle) +
+                  ansiColorWrap("", prettyLogStyles.reset)
+            : value;
+    });
 }
 
 function _colorString(arg: unknown): string | unknown {
-  if (arg instanceof Error) {
-    arg.message = _colorString(arg.message) as string;
-  } else if (typeof arg === "string") {
-    const johnGruberURLRegEx =
-      /\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|(?:\([^\s()<>]+|(?:\([^\s()<>]+\)))*\))+(?:(?:\([^\s()<>]+|(?:\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/;
-    const filePathRegEx =
-      /((?:\b[a-zA-Z]:[\/\\]*|[~\.]?[\/\\]+)[\w.-]+(?:[\/\\]+[\w.-]+)*|[\w.-]+(?:[\/\\]+[\w.-]+)+)/;
-    const quotedStringRegEx = /('[^']*')/;
+    if (arg instanceof Error) {
+        arg.message = _colorString(arg.message) as string;
+    } else if (typeof arg === "string") {
+        const johnGruberURLRegEx =
+            /\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|(?:\([^\s()<>]+|(?:\([^\s()<>]+\)))*\))+(?:(?:\([^\s()<>]+|(?:\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/;
+        const filePathRegEx =
+            /((?:\b[a-zA-Z]:[\/\\]*|[~\.]?[\/\\]+)[\w.-]+(?:[\/\\]+[\w.-]+)*|[\w.-]+(?:[\/\\]+[\w.-]+)+)/;
+        const quotedStringRegEx = /('[^']*')/;
 
-    // Highlight URLs in blue and file paths in yellow in a single pass to avoid overlapping replacements
-    arg = arg.replace(
-      new RegExp(
-        `${johnGruberURLRegEx.source}|${filePathRegEx.source}|${quotedStringRegEx.source}`,
-        "gi"
-      ),
-      (
-        _match: string,
-        url: string | undefined,
-        path: string | undefined,
-        quotedStr: string | undefined,
-        _offset: number,
-        _fullStr: string
-      ) => {
-        return quotedStr
-          ? chalk.green(quotedStr)
-          : url
-          ? chalk.blue(url)
-          : chalk.yellow(path);
-      }
-    );
+        // Highlight URLs in blue and file paths in yellow in a single pass to avoid overlapping replacements
+        arg = arg.replace(
+            new RegExp(`${johnGruberURLRegEx.source}|${filePathRegEx.source}|${quotedStringRegEx.source}`, "gi"),
+            (
+                _match: string,
+                url: string | undefined,
+                path: string | undefined,
+                quotedStr: string | undefined,
+                _offset: number,
+                _fullStr: string
+            ) => {
+                return quotedStr ? chalk.green(quotedStr) : url ? chalk.blue(url) : chalk.yellow(path);
+            }
+        );
+        return arg;
+    } else if (typeof arg === "symbol") {
+        return chalk`{blue ${arg}}`;
+    }
     return arg;
-  } else if (typeof arg === "symbol") {
-    return chalk`{blue ${arg}}`;
-  }
-  return arg;
 }
 
 const prettyLogStyles = {
-  reset: [0, 0],
-  bold: [1, 22],
-  dim: [2, 22],
-  italic: [3, 23],
-  underline: [4, 24],
-  overline: [53, 55],
-  inverse: [7, 27],
-  hidden: [8, 28],
-  strikethrough: [9, 29],
-  black: [30, 39],
-  red: [31, 39],
-  green: [32, 39],
-  yellow: [33, 39],
-  blue: [34, 39],
-  magenta: [35, 39],
-  cyan: [36, 39],
-  white: [37, 39],
-  blackBright: [90, 39],
-  redBright: [91, 39],
-  greenBright: [92, 39],
-  yellowBright: [93, 39],
-  blueBright: [94, 39],
-  magentaBright: [95, 39],
-  cyanBright: [96, 39],
-  whiteBright: [97, 39],
-  bgBlack: [40, 49],
-  bgRed: [41, 49],
-  bgGreen: [42, 49],
-  bgYellow: [43, 49],
-  bgBlue: [44, 49],
-  bgMagenta: [45, 49],
-  bgCyan: [46, 49],
-  bgWhite: [47, 49],
-  bgBlackBright: [100, 49],
-  bgRedBright: [101, 49],
-  bgGreenBright: [102, 49],
-  bgYellowBright: [103, 49],
-  bgBlueBright: [104, 49],
-  bgMagentaBright: [105, 49],
-  bgCyanBright: [106, 49],
-  bgWhiteBright: [107, 49],
+    reset: [0, 0],
+    bold: [1, 22],
+    dim: [2, 22],
+    italic: [3, 23],
+    underline: [4, 24],
+    overline: [53, 55],
+    inverse: [7, 27],
+    hidden: [8, 28],
+    strikethrough: [9, 29],
+    black: [30, 39],
+    red: [31, 39],
+    green: [32, 39],
+    yellow: [33, 39],
+    blue: [34, 39],
+    magenta: [35, 39],
+    cyan: [36, 39],
+    white: [37, 39],
+    blackBright: [90, 39],
+    redBright: [91, 39],
+    greenBright: [92, 39],
+    yellowBright: [93, 39],
+    blueBright: [94, 39],
+    magentaBright: [95, 39],
+    cyanBright: [96, 39],
+    whiteBright: [97, 39],
+    bgBlack: [40, 49],
+    bgRed: [41, 49],
+    bgGreen: [42, 49],
+    bgYellow: [43, 49],
+    bgBlue: [44, 49],
+    bgMagenta: [45, 49],
+    bgCyan: [46, 49],
+    bgWhite: [47, 49],
+    bgBlackBright: [100, 49],
+    bgRedBright: [101, 49],
+    bgGreenBright: [102, 49],
+    bgYellowBright: [103, 49],
+    bgBlueBright: [104, 49],
+    bgMagentaBright: [105, 49],
+    bgCyanBright: [106, 49],
+    bgWhiteBright: [107, 49],
 };
 
 // Override console methods

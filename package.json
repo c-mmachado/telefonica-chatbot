@@ -19,6 +19,7 @@
     "clean:deps": "shx rm -rf node_modules/",
     "clean": "npm run clean:build && npm run clean:deps",
     "tsc": "tsc",
+    "shx": "shx",
     "atk:help": "atk -help",
     "atk": "atk",
     "nodemon:help": "nodemon -help",
