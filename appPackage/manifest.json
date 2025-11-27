@@ -38,8 +38,7 @@
                 {
                     "scopes": [
                         "personal",
-                        "team",
-                        "groupChat"
+                        "team"
                     ],
                     "commands": [
                         {
@@ -65,5 +64,19 @@
     "webApplicationInfo": {
         "id": "${{AAD_APP_CLIENT_ID}}",
         "resource": "api://botid-${{AAD_APP_CLIENT_ID}}"
+    },
+    "authorization": {
+        "permissions": {
+            "resourceSpecific": [
+                {
+                    "name": "ChannelMessage.Read.Group",
+                    "type": "Application"
+                },
+                {
+                    "name": "ChannelSettings.Read.Group",
+                    "type": "Application"
+                }
+            ]
+        }
     }
 }
