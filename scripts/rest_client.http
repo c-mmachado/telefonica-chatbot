@@ -1,0 +1,65 @@
+@baseUrl = http://localhost:3978
+@techId = 1
+
+# Health Check
+GET {{baseUrl}}/api/health
+###
+
+# RT API Health Check
+GET {{baseUrl}}/api/rt/health
+###
+
+# Graph API Health Check
+GET {{baseUrl}}/api/graph/health
+###
+
+# SharePoint API Health Check
+GET {{baseUrl}}/api/sharepoint/health
+###
+
+# DB Health Check
+GET {{baseUrl}}/api/db/health
+###
+
+# Token API - Get token for authentication
+# @name apiToken
+POST {{baseUrl}}/api/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+###
+
+@authToken = {{apiToken.response.body.data.token}}
+
+# API Logs - Lists all logs (Requires authentication)
+# @name apiLogs
+GET {{baseUrl}}/api/logs
+Authorization: Bearer {{authToken}}
+###
+
+# Technicians - Lists all technicians (Requires authentication)
+# @name apiTechnicians
+GET {{baseUrl}}/api/technicians
+Authorization: Bearer {{authToken}}
+###
+
+# Technician By Id - Fetches a technician by ID (Requires authentication)
+# @name apiTechnicianById
+GET {{baseUrl}}/api/technicians/{{techId}}
+Authorization: Bearer {{authToken}}
+###
+
+# Technician By Id - Fetches a technician by ID (Requires authentication)
+# @name apiTechnicianCreate
+POST {{baseUrl}}/api/technicians
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "email": "example.technician@example.com"
+}
+###
+

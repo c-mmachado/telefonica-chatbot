@@ -1,8 +1,8 @@
 import { ConnectionPool } from "mssql";
 
 import { config } from "../config/config";
-import { TechnicianRepository } from "../repositories/technicians";
-import { LogsRepository } from "../repositories/logs";
+import { TechnicianRepository } from "../server/repositories/technicians";
+import { LogsRepository } from "../server/repositories/logs";
 
 // Create database connection pool
 export const dbConnection: ConnectionPool = new ConnectionPool({
@@ -12,8 +12,9 @@ export const dbConnection: ConnectionPool = new ConnectionPool({
   password: config.dbPassword,
   database: config.dbName,
   options: {
-    encrypt: false,
+    encrypt: true,
     enableArithAbort: true,
+    trustServerCertificate: true
   },
 });
 

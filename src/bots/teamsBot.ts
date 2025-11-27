@@ -7,18 +7,158 @@ import {
   InvokeResponse,
   TeamsInfo,
   TeamsChannelAccount,
+  MemoryStorage,
+  // CloudAdapter,
 } from "botbuilder";
+// import { UserTokenClient } from "botframework-connector";
 
 import { BotConfiguration } from "../config/config";
-import { HandlerManager, OAuthAwareHandlerManager } from "../commands/manager";
-import { DialogManager } from "../dialogs/manager";
-import { OAuthDialog } from "../dialogs/oauthDialog";
+import { HandlerManager } from "./commands/manager";
+import { DialogManager } from "./dialogs/manager";
+import { OAuthDialog } from "./dialogs/oauthDialog";
 import {
   AdaptiveCardAction,
   AdaptiveCardActionActivityValue,
-} from "../adaptiveCards/actions/actions";
-import { TechnicianRepository } from "../repositories/technicians";
-import { AdaptiveCards } from "../adaptiveCards/adaptiveCards";
+} from "./adaptiveCards/actions/actions";
+import { AdaptiveCards } from "./adaptiveCards/adaptiveCards";
+
+import { TechnicianRepository } from "../server/repositories/technicians";
+import { HandlerTurnContextFactory } from "./commands/context";
+
+export interface TeamsBotOptions {
+  config: BotConfiguration;
+
+  conversationState: ConversationState;
+
+  userState: UserState;
+
+  handlerManager: HandlerManager;
+
+  dialogManager: DialogManager;
+
+  techRepository: TechnicianRepository;
+
+  contextFactory: HandlerTurnContextFactory;
+}
+
+export interface TeamsBotBuilder {
+  options(options: TeamsBotOptions): TeamsBotBuilder;
+
+  config(config: BotConfiguration): TeamsBotBuilder;
+
+  conversationState(conversationState: ConversationState): TeamsBotBuilder;
+
+  userState(userState: UserState): TeamsBotBuilder;
+
+  handlerManager(handlerManager: HandlerManager): TeamsBotBuilder;
+
+  dialogManager(dialogManager: DialogManager): TeamsBotBuilder;
+
+  techRepository(techRepository: TechnicianRepository): TeamsBotBuilder;
+
+  contextFactory(contextFactory: HandlerTurnContextFactory): TeamsBotBuilder;
+
+  build(): TeamsBot;
+}
+
+export class DefaultTeamsBotBuilder implements TeamsBotBuilder {
+  // public static Instance: TeamsBotBuilder = new TeamsBotBuilder();
+
+  private _options: Partial<TeamsBotOptions> = {};
+
+  constructor() {
+    // if (TeamsBotBuilder.Instance) {
+    //   throw new Error(
+    //     `${TeamsBotBuilder.name} is a singleton class. Use '${TeamsBotBuilder.name}.Instance' to access the instance.`
+    //   );
+    // }
+  }
+
+  public options(options: TeamsBotOptions): TeamsBotBuilder {
+    this._options = options;
+    return this;
+  }
+
+  public config(config: BotConfiguration): TeamsBotBuilder {
+    this._options.config = config;
+    return this;
+  }
+
+  public conversationState(
+    conversationState: ConversationState
+  ): TeamsBotBuilder {
+    this._options.conversationState = conversationState;
+    return this;
+  }
+
+  public userState(userState: UserState): TeamsBotBuilder {
+    this._options.userState = userState;
+    return this;
+  }
+
+  public handlerManager(handlerManager: HandlerManager): TeamsBotBuilder {
+    this._options.handlerManager = handlerManager;
+    return this;
+  }
+
+  public dialogManager(dialogManager: DialogManager): TeamsBotBuilder {
+    this._options.dialogManager = dialogManager;
+    return this;
+  }
+
+  public techRepository(techRepository: TechnicianRepository): TeamsBotBuilder {
+    this._options.techRepository = techRepository;
+    return this;
+  }
+
+  public contextFactory(
+    contextFactory: HandlerTurnContextFactory
+  ): TeamsBotBuilder {
+    this._options.contextFactory = contextFactory;
+    return this;
+  }
+
+  public build(): TeamsBot {
+    if (!this._options.config) {
+      throw new Error(`Cannot build TeamsBot: missing 'config' option.`);
+    }
+    if (!this._options.conversationState) {
+      this._options.conversationState = new ConversationState(
+        new MemoryStorage()
+      );
+    }
+    if (!this._options.userState) {
+      this._options.userState = new UserState(new MemoryStorage());
+    }
+    if (!this._options.handlerManager) {
+      throw new Error(
+        `Cannot build TeamsBot: missing 'handlerManager' option.`
+      );
+    }
+    if (!this._options.dialogManager) {
+      throw new Error(`Cannot build TeamsBot: missing 'dialogManager' option.`);
+    }
+    if (!this._options.techRepository) {
+      throw new Error(
+        `Cannot build TeamsBot: missing 'techRepository' option.`
+      );
+    }
+    if (!this._options.contextFactory) {
+      throw new Error(
+        `Cannot build TeamsBot: missing 'contextFactory' option.`
+      );
+    }
+    return new TeamsBot(
+      this._options.config,
+      this._options.conversationState,
+      this._options.userState,
+      this._options.handlerManager,
+      this._options.dialogManager,
+      this._options.techRepository,
+      this._options.contextFactory
+    );
+  }
+}
 
 export class TeamsBot extends TeamsActivityHandler {
   constructor(
@@ -27,16 +167,17 @@ export class TeamsBot extends TeamsActivityHandler {
     private readonly _userState: UserState,
     private readonly _handlerManager: HandlerManager,
     private readonly _dialogManager: DialogManager,
-    private readonly _techRepository: TechnicianRepository
+    private readonly _techRepository: TechnicianRepository,
+    private readonly _contextFactory: HandlerTurnContextFactory
   ) {
     super();
 
-    // this.onMembersAdded(this._handleMembersAdded.bind(this));
     // this.onInstallationUpdateAdd(this._handleInstalationUpdateAdd.bind(this));
     // this.onInstallationUpdateRemove(
     //   this._handleInstalationUpdateRemove.bind(this)
     // );
     this.onMessage(this._handleMessage.bind(this));
+    this.onMembersAdded(this._handleMembersAdded.bind(this));
     this.onTokenResponseEvent(this._handleTokenResponse.bind(this));
   }
 
@@ -48,19 +189,16 @@ export class TeamsBot extends TeamsActivityHandler {
    * @inheritdoc
    */
   public async run(context: TurnContext): Promise<void> {
-    console.debug(`@start`);
-
     // Entry point for the bot logic which receives all incoming activities
-    await super.run(context).catch((error: any): void => {
-      // Catches any errors that occur during the bot logic and logs them
-      console.error(error);
-    });
+    await super
+      .run(this._contextFactory.create(context))
+      .catch((error: any): void => {
+        console.error(error);
+      });
 
     // Save any state changes after the bot logic completes
     await this._conversationState.saveChanges(context, false);
     await this._userState.saveChanges(context, false);
-
-    console.debug(`@end`);
   }
 
   /**
@@ -69,14 +207,11 @@ export class TeamsBot extends TeamsActivityHandler {
   public async onInvokeActivity(
     context: TurnContext
   ): Promise<InvokeResponse<any>> {
-    console.debug(`@start`);
-    console.debug(`context.activity:`, context.activity);
+    console.debug("context.activity:", context.activity);
 
     if (context.activity.name === AdaptiveCardAction.Name) {
       // Extracts the action value from the activity when the activity has name 'adaptiveCard/action'
       const value: AdaptiveCardActionActivityValue = context.activity.value;
-
-      console.debug(`context.activity.value:`, value);
 
       // Resolves action handler from 'activity.value.action.verb' and dispatches the action
       const cardOrText: any | string =
@@ -86,19 +221,15 @@ export class TeamsBot extends TeamsActivityHandler {
           value.action.data
         );
 
-      console.debug(`@end[ADAPTIVE_CARD_ACTION]`);
-
       // Return an invoke response to indicate that the activity was handled and to prevent the Teams client from displaying an error message
       // due to the activity not being responded to
-
       // return { status: StatusCodes.OK };
+      // TODO: Check if cardOrText is string or Adaptive Card and return appropriate InvokeResponse object as well as if there is an Error instead
       return AdaptiveCards.invokeResponse(cardOrText);
     }
 
     // Call super implementation for all other invoke activities
-    const result = await super.onInvokeActivity(context);
-    console.debug(`@end`);
-    return result;
+    return await super.onInvokeActivity(context);
   }
 
   /**
@@ -108,7 +239,7 @@ export class TeamsBot extends TeamsActivityHandler {
     context: TurnContext,
     query: SigninStateVerificationQuery
   ): Promise<void> {
-    return await this._handleSigninAction(context, query);
+    return await this._onSignInAction(context, query);
   }
 
   /**
@@ -118,95 +249,37 @@ export class TeamsBot extends TeamsActivityHandler {
     context: TurnContext,
     query: SigninStateVerificationQuery
   ): Promise<void> {
-    return await this._handleSigninAction(context, query);
+    return await this._onSignInAction(context, query);
   }
 
-  private async _handleSigninAction(
+  private async _onSignInAction(
     context: TurnContext,
     query: SigninStateVerificationQuery
   ): Promise<void> {
-    // This activity type can be triggered during the auth flow in either a 'signin/verifyState' or 'signin/tokenExchange' event
-    console.debug(`@start`);
-    console.debug(`query:`, query);
-
-    // Retrieves the oauth handler state from the handler manager using the 'replyToId' of the activity
-    // which should correspond to the auth flow login card sent by the bot, and would match a state containing
-    // the property 'oauthActivityId' set to the 'replyToId' of this activity.
-    const oauthHandlerState: any | null = (
-      this._handlerManager as OAuthAwareHandlerManager
-    ).oauthDialogState(context.activity?.replyToId);
-
-    // Deletes the message corresponding to the auth flow card sent by the bot
-    if (context.activity?.replyToId) {
-      await context.deleteActivity(context.activity.replyToId);
-    }
-
-    // Checks if the auth flow was canceled by the user or completed
-    const state = query.state;
-    if (state?.indexOf("CancelledByUser") >= 0) {
-      // If the auth flow was canceled by the user, ends the dialog
-      await context.sendActivity(
-        "El usuario rechazó el flujo de autenticación."
-      );
-      await this._dialogManager
-        .stopDialog(context, OAuthDialog.name)
-        .catch((error: any): void => {
-          // Catches any errors that occur during the dialog stopping and logs them
-          console.error(error, error.stack);
-        });
-    } else {
-      // If the auth flow was completed, continues the dialog to runs the next step
-      await this._dialogManager
-        .continueDialog(context, OAuthDialog.name)
-        .catch((error: any): void => {
-          // Catches any errors that occur during the dialog continuation and logs them
-          console.error(error, error.stack);
-        });
-
-      // Checks if the OAuth handler state was found
-      if (oauthHandlerState) {
-        // If the OAuth handler state was found, dispatches the handling of the current context to the
-        // handler stored in the state and supplies it with the original command message and its context
-        await this._handlerManager
-          .dispatch(oauthHandlerState.handler, context, null, {
-            sequenceId: oauthHandlerState.sequenceId,
-            commandMessage: oauthHandlerState.commandMessage,
-            commandMessageContext: oauthHandlerState.commandMessageContext,
-          })
-          .catch((error: any): void => {
-            // Catches any errors that occur during the handler dispatching and logs them.
-            console.error(error, error.stack);
-          });
-      }
-    }
-
-    console.debug(`@end`);
+    return this._handlerManager
+      .onSignInAction(context, query)
+      .catch((error: any): void => {
+        console.error(error);
+      });
   }
 
   private async _handleTokenResponse(
     context: TurnContext,
     next: () => Promise<void>
   ): Promise<void> {
-    // This activity type can be triggered during the OAuth flow
-    console.debug(`@start`);
+    // This activity type can be triggered during an SSO flow (Currently unused)
     console.debug(`context.activity:`, context.activity);
 
     if (context.activity?.replyToId) {
-      // Deletes the message corresponding to the OAuth flow card sent by the bot
       await context.deleteActivity(context.activity.replyToId);
     }
 
-    // Continues the dialog to run the next step
     await this._dialogManager
       .continueDialog(context, OAuthDialog.name)
       .catch((error: any): void => {
-        // Catches any errors that occur during the dialog continuation and logs them
-        console.error(error, error.stack);
+        console.error(error);
       });
 
-    console.debug(`@end`);
-
-    // By calling next() you ensure that the next BotHandler is run.
     return await next();
   }
 
@@ -214,22 +287,14 @@ export class TeamsBot extends TeamsActivityHandler {
     context: TurnContext,
     next: () => Promise<void>
   ): Promise<void> {
-    console.debug(`@start`);
-    console.debug(`context.activity:`, context.activity);
+    console.debug("context.activity:", context.activity);
 
-    // throw new ErrorWithCode(
-    //   "This method is not implemented yet. Please implement the _handleMessage method to handle incoming messages.",
-    //   ErrorCode.FailedOperation
-    // );
-
-    // Gets the text of the activity
+    // Removes the mention of this bot from activity text
     let text = context.activity.text;
-    // Remove the mention of this bot from activity text
     const removedMentionText = TurnContext.removeRecipientMention(
       context.activity
     );
     if (removedMentionText) {
-      // Remove any line breaks as well as leading and trailing white spaces
       text = removedMentionText.toLowerCase().replace(/\n|\r/g, "").trim();
     }
 
@@ -242,15 +307,14 @@ export class TeamsBot extends TeamsActivityHandler {
         // Set the activity name to 'adaptiveCard/action' to trigger the onInvokeActivity method
         context.activity.name = AdaptiveCardAction.Name;
         await this.onInvokeActivity(context);
-        console.debug("@end[ADAPTIVE_CARD_ACTION]");
-        return;
+
+        return await next();
       }
     }
 
-    console.debug(`text: ${text}`);
+    console.debug(`text: '${text}'`);
     console.debug(
-      `context.activity.conversation.conversationType:`,
-      context.activity.conversation.conversationType
+      `context.activity.conversation.conversationType: '${context.activity.conversation.conversationType}'`
     );
 
     // Gets the caller information
@@ -261,35 +325,52 @@ export class TeamsBot extends TeamsActivityHandler {
     if (!fromInfo) {
       // If the caller email address cannot be resolved, log an error and return as it would be impossible to validate
       // if the caller is a technician
-      console.error(`Unable to resolve caller email address`);
-      return;
+      console.error(
+        `Unable to resolve caller email address for user '${context.activity.from.name}' with id '${context.activity.from.id}' and aadObjectId '${context.activity.from.aadObjectId}'`
+      );
+      throw new Error(
+        `Unable to resolve caller email address for user '${context.activity.from.name}' with id '${context.activity.from.id}' and aadObjectId '${context.activity.from.aadObjectId}'`
+      );
     }
 
     if (!this.config.allowAll) {
       // If the bot is not configured to allow all users, check if the caller is a technician
-      const technician = await this._techRepository.technicianByEmail(
-        fromInfo.email
-      );
+      const technician = fromInfo.email
+        ? await this._techRepository.technicianByEmail(fromInfo.email)
+        : null;
       if (!technician) {
         // If the caller is not a technician, log a warning and return as the caller is not authorized to use the bot
-        console.warn(`Caller is not a technician`);
-        console.debug(`@end[UNAUTHORIZED_CALLER]`);
+        console.warn(
+          `Caller '${fromInfo.email}' is not registered as a technician`
+        );
 
-        // By calling next() you ensure that the next BotHandler is run.
         return await next();
       }
     }
 
-    // Resolves command handler from text and dispatches the command
     await this._handlerManager
       .resolveAndDispatch(context, text)
       .catch((error: any): void => {
-        console.error(error, error.stack);
+        console.error(error);
       });
 
-    console.debug(`@end`);
+    return await next();
+  }
 
-    // By calling next() you ensure that the next BotHandler is run.
+  private async _handleMembersAdded(
+    context: TurnContext,
+    next: () => Promise<void>
+  ): Promise<void> {
+    console.debug("context.activity:", context.activity);
+
+    const membersAdded = context.activity.membersAdded;
+    for (const member of membersAdded ?? []) {
+      // Greet anyone that was not the target (recipient) of this message
+      if (member.id !== context.activity.recipient.id) {
+        // const welcomeText = `¡Hola y bienvenido! Soy el bot de gestión de tickets. ¿En qué puedo ayudarte hoy?`;
+        // await context.sendActivity(welcomeText);
+      }
+    }
     return await next();
   }
 }

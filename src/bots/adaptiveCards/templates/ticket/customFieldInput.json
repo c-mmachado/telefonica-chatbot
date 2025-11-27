@@ -1,0 +1,21 @@
+{
+    "type": "Container",
+    "isVisible": "${visible}",
+    "items": [
+        {
+            "type": "TextBlock",
+            "size": "Medium",
+            "weight": "Bolder",
+            "text": "${text}"
+        },
+        {
+            "type": "Input.Text",
+            "placeholder": "${placeholder}",
+            "id": "${id}",
+            "value": "",
+            "isRequired": false,
+            "isMultiline": false,
+            "maxLength": 256
+        }
+    ]
+}

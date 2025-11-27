@@ -17,13 +17,32 @@ export const adapter = new CloudAdapter(
   new ConfigurationBotFrameworkAuthentication(
     {},
     new ConfigurationServiceClientCredentialFactory({
-      MicrosoftAppType: config.tenantId ? "SingleTenant" : "MultiTenant",
+      MicrosoftAppType: config.botType, // config.tenantId ? "SingleTenant" : "MultiTenant",
       MicrosoftAppId: config.botId,
       MicrosoftAppPassword: config.botPassword,
       MicrosoftAppTenantId: config.tenantId,
     })
   )
 );
+
+const adapterTurnErrorHandler = adapter.onTurnError;
+const onTurnErrorHandler = async (
+  context: TurnContext,
+  error: any
+): Promise<void> => {
+  console.error(error);
+
+  await context.sendTraceActivity(
+    "OnTurnError Trace",
+    `${error}`,
+    "https://www.botframework.com/schemas/error",
+    "TurnError"
+  );
+
+  await adapterTurnErrorHandler?.(context, error);
+};
+adapter.onTurnError = onTurnErrorHandler;
+
 // new TeamsAdapter(
 //   {},
 //   new ConfigurationServiceClientCredentialFactory({
@@ -33,24 +52,6 @@ export const adapter = new CloudAdapter(
 //     MicrosoftAppTenantId: config.tenantId,
 //   })
 // );
-
-const adapterTurnErrorHandler = adapter.onTurnError;
-const onTurnErrorHandler = async (
-  context: TurnContext,
-  error: any
-): Promise<void> => {
-  console.error(`[adapter][ERROR] ${onTurnErrorHandler.name} ERROR: ${error}`);
-
-  await context.sendTraceActivity(
-    "OnTurnError Trace",
-    `${error}`,
-    "https://www.botframework.com/schemas/error",
-    "TurnError"
-  );
-
-  await adapterTurnErrorHandler(context, error);
-};
-adapter.onTurnError = onTurnErrorHandler;
 
 // Create the command bot and register the command handlers for your app.
 // You can also use the commandBot.command.registerCommands to register other commands
