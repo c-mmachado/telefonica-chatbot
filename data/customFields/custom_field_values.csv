@@ -1,0 +1,298 @@
+CustomFieldId,name,BasedOn,Name,SortOrder,LastUpdated,Category
+34,IT-0-Tipo,,Incidencia,"0",2023-04-04 10:05:03,
+34,IT-0-Tipo,,Solicitud,1,2023-04-04 10:05:06,
+35,IT-1-Area,34,I-Desktop,"0",2023-04-04 10:20:21,Incidencia
+35,IT-1-Area,34,I-IS,"0",2023-04-04 10:20:21,Incidencia
+35,IT-1-Area,34,I-Network,"0",2023-04-04 10:20:21,Incidencia
+35,IT-1-Area,34,I-Operaciones,"0",2023-04-04 10:20:21,Incidencia
+35,IT-1-Area,34,I-Pedidos,"0",2023-04-04 10:20:21,Incidencia
+35,IT-1-Area,34,S-Desktop,1,2023-04-04 10:20:21,Solicitud
+35,IT-1-Area,34,S-IS,1,2023-04-04 10:20:21,Solicitud
+35,IT-1-Area,34,S-Network,1,2023-04-04 10:20:21,Solicitud
+35,IT-1-Area,34,S-Operaciones,1,2023-04-04 10:20:21,Solicitud
+35,IT-1-Area,34,S-Pedidos,1,2023-04-04 10:20:21,Solicitud
+35,IT-1-Area,34,S-Préstamos,1,2024-10-25 13:22:16,Solicitud
+36,IT-2-Subarea,35,(ID)- Incidencias/Problemas HW/SW,1,2023-04-04 12:40:41,I-Desktop
+36,IT-2-Subarea,35,(ID)- Logística,1,2024-10-28 14:00:35,I-Desktop
+36,IT-2-Subarea,35,(ID)- Videconferencias,1,2023-04-04 12:40:41,I-Desktop
+36,IT-2-Subarea,35,(II)- DATOS  USUARIOS,2,2024-10-25 13:59:20,I-IS
+36,IT-2-Subarea,35,(II)- FINANZAS,2,2024-10-25 13:59:20,I-IS
+36,IT-2-Subarea,35,(II)- Incidencia,2,2023-04-04 12:40:41,I-IS
+36,IT-2-Subarea,35,(II)- ITUSER,2,2024-10-25 13:59:20,I-IS
+36,IT-2-Subarea,35,(II)- OTRAS,2,2024-10-25 13:59:20,I-IS
+36,IT-2-Subarea,35,(II)- USUARIOS,2,2024-10-25 13:59:20,I-IS
+36,IT-2-Subarea,35,(IN)- Conectividad física,3,2023-04-04 12:40:41,I-Network
+36,IT-2-Subarea,35,(IN)- DHCP,3,2023-04-04 12:40:41,I-Network
+36,IT-2-Subarea,35,(IN)- DNS,3,2024-10-28 15:08:40,I-Network
+36,IT-2-Subarea,35,(IN)- Exposición de servicios,3,2024-10-28 15:09:21,I-Network
+36,IT-2-Subarea,35,(IN)- Proxy,3,2024-10-28 15:09:35,I-Network
+36,IT-2-Subarea,35,(IN)- Proyectos de red,3,2024-10-25 11:58:52,I-Network
+36,IT-2-Subarea,35,(IN)- Registro DNS,3,2024-10-25 12:02:31,I-Network
+36,IT-2-Subarea,35,(IN)- Reglas de Firewall,3,2024-10-25 11:58:52,I-Network
+36,IT-2-Subarea,35,(IN)- Servicios Movistar,3,2024-10-28 15:09:55,I-Network
+36,IT-2-Subarea,35,(IN)- VPN,3,2023-04-04 12:40:41,I-Network
+36,IT-2-Subarea,35,(IO)- Antivirus,4,2024-10-28 15:38:05,I-Operaciones
+36,IT-2-Subarea,35,(IO)- Identidad,4,2023-04-04 12:40:41,I-Operaciones
+36,IT-2-Subarea,35,(IO)- Lista de correo,4,2023-04-04 12:40:41,I-Operaciones
+36,IT-2-Subarea,35,(IO)- Servicios O365,4,2023-04-04 12:40:41,I-Operaciones
+36,IT-2-Subarea,35,(IO)- Telefonía IP,4,2023-04-04 12:40:41,I-Operaciones
+36,IT-2-Subarea,35,(IP)- telefonía,6,2024-10-25 12:18:13,I-Pedidos
+36,IT-2-Subarea,35,(SD)- Logística,7,2023-04-04 12:19:07,S-Desktop
+36,IT-2-Subarea,35,(SI)- DATOS  USUARIOS,8,2024-10-25 13:55:45,S-IS
+36,IT-2-Subarea,35,(SI)- FINANZAS,8,2024-10-25 13:56:04,S-IS
+36,IT-2-Subarea,35,(SI)- ITUSER,8,2024-10-25 13:56:19,S-IS
+36,IT-2-Subarea,35,(SI)- OTRAS,8,2024-10-25 13:56:34,S-IS
+36,IT-2-Subarea,35,(SI)- USUARIOS,8,2024-10-25 13:56:51,S-IS
+36,IT-2-Subarea,35,(SN)- Conectividad física,9,2023-04-04 12:29:33,S-Network
+36,IT-2-Subarea,35,(SN)- DHCP,9,2023-04-04 12:29:34,S-Network
+36,IT-2-Subarea,35,(SN)- Exposición de servicios,9,2024-10-25 11:59:31,S-Network
+36,IT-2-Subarea,35,(SN)- Proyectos de red,9,2024-10-25 11:58:52,S-Network
+36,IT-2-Subarea,35,(SN)- Registro DNS,9,2024-10-25 12:02:31,S-Network
+36,IT-2-Subarea,35,(SN)- Reglas de Firewall,9,2024-10-25 11:58:52,S-Network
+36,IT-2-Subarea,35,(SN)- Servicios Movistar,9,2024-10-29 10:10:11,S-Network
+36,IT-2-Subarea,35,(SN)- VPN,9,2023-04-04 12:29:34,S-Network
+36,IT-2-Subarea,35,(SO)- Identidad,10,2023-04-04 12:32:05,S-Operaciones
+36,IT-2-Subarea,35,(SO)- Lista de correo,10,2023-04-04 12:32:05,S-Operaciones
+36,IT-2-Subarea,35,(SO)- Servicios O365,10,2023-04-04 12:32:05,S-Operaciones
+36,IT-2-Subarea,35,(SO)- Telefonía IP,10,2023-04-04 12:31:55,S-Operaciones
+36,IT-2-Subarea,35,(SP)- Compra HW,11,2024-10-25 13:03:01,S-Pedidos
+36,IT-2-Subarea,35,(SP)- Compra Intangibles,11,2024-10-25 13:03:01,S-Pedidos
+36,IT-2-Subarea,35,(SP)- reparaciones,11,2024-10-25 12:48:21,S-Pedidos
+36,IT-2-Subarea,35,(SP)-telefonía,11,2024-10-25 12:18:13,S-Pedidos
+36,IT-2-Subarea,35,(SP)- móviles,12,2024-10-25 13:25:37,S-Préstamos
+36,IT-2-Subarea,35,(SP)- Otros,12,2024-10-25 13:23:41,S-Préstamos
+36,IT-2-Subarea,35,(SP)- PC,12,2024-10-29 11:08:47,S-Préstamos
+37,IT-3-Servicio / Tecnología,36,(IDI)- Identidad,1,2024-10-28 13:38:02,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,(IDI)- SW,1,2024-10-25 13:49:20,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,Correo (cliente e investgacion previa a pasarla a operación),1,2023-04-04 12:47:28,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,HW,1,2023-04-04 12:47:45,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,Impresión,1,2023-04-04 12:48:54,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,RED,1,2023-04-04 12:48:54,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,Servicios O365,1,2023-04-04 12:48:54,(ID)- Incidencias/Problemas HW/SW
+37,IT-3-Servicio / Tecnología,36,Altas,37,2024-10-28 14:01:08,(ID)- Logística
+37,IT-3-Servicio / Tecnología,36,"Material adicional, para renovación o reposición",37,2024-10-28 14:01:08,(ID)- Logística
+37,IT-3-Servicio / Tecnología,36,Peticiones de material adicional (no altas ni renovaciones),37,2024-10-28 14:01:08,(ID)- Logística
+37,IT-3-Servicio / Tecnología,36,Renovaciones de puesto de trabajo,37,2024-10-28 14:01:08,(ID)- Logística
+37,IT-3-Servicio / Tecnología,36,Eventos,3,2023-04-04 12:50:25,(ID)- Videconferencias
+37,IT-3-Servicio / Tecnología,36,Soporte,3,2023-04-04 12:50:45,(ID)- Videconferencias
+37,IT-3-Servicio / Tecnología,36,(IID)- DGROWTH,29,2024-10-28 14:03:37,(II)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IID)-GUD,29,2024-10-28 14:04:49,(II)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IID)-INCIDENCIAS NOMINA,29,2024-10-28 14:04:49,(II)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IID)-PEOPLE BUDGET,29,2024-10-28 14:14:23,(II)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIF)- COMPRAS,31,2024-10-28 14:29:41,(II)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(IIF)- GASTOS GADICO,31,2024-10-28 14:20:42,(II)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(IIF)- PARTES TRABAJO,31,2024-10-28 14:20:42,(II)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(IIF)- SUBSIDIZES,31,2024-10-28 14:20:42,(II)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(III)- ARGOS,28,2024-10-25 14:00:30,(II)- ITUSER
+37,IT-3-Servicio / Tecnología,36,(III)- COMUNICACIONES,28,2024-10-25 14:00:53,(II)- ITUSER
+37,IT-3-Servicio / Tecnología,36,(III)- MONITOR,28,2024-10-28 13:29:39,(II)- ITUSER
+37,IT-3-Servicio / Tecnología,36,(III)- PROCESAMIENTO TICKETS,28,2024-10-25 14:01:22,(II)- ITUSER
+37,IT-3-Servicio / Tecnología,36,(III)- WEBITUSER,28,2024-10-28 13:29:39,(II)- ITUSER
+37,IT-3-Servicio / Tecnología,36,(IIO)- CARGA COSTES,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- CARGA PEPS,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- FESTIVOS,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- FICH POTENCIAL,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- FORMACION,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- NOMINA,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- NORMATIVAS,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- PLIEGOS,33,2024-10-28 14:20:42,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIO)- SUBVACACIONES,33,2024-10-28 14:47:55,(II)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(IIU)- CERBERO,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- COMPRAS,35,2024-10-28 14:17:35,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- GUSER,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- INTRANET,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- LICENCIAS,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- RIS,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- TRAVEL,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(IIU)- WEBITUSER,35,2024-10-28 14:20:42,(II)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(INC) CPD,26,2024-10-28 15:11:49,(IN)- Conectividad física
+37,IT-3-Servicio / Tecnología,36,(INC) Puestos de trabajo,26,2024-10-23 13:16:15,(IN)- Conectividad física
+37,IT-3-Servicio / Tecnología,36,DNS/Web Filter,38,2024-10-28 15:12:57,(IN)- DNS
+37,IT-3-Servicio / Tecnología,36,Registros zona interna,38,2024-10-28 15:13:10,(IN)- DNS
+37,IT-3-Servicio / Tecnología,36,Registros zona pública,38,2024-10-28 15:13:22,(IN)- DNS
+37,IT-3-Servicio / Tecnología,36,En Internet,39,2024-10-28 15:15:35,(IN)- Exposición de servicios
+37,IT-3-Servicio / Tecnología,36,En red interna,39,2024-10-28 15:16:15,(IN)- Exposición de servicios
+37,IT-3-Servicio / Tecnología,36,En RTT,39,2024-10-28 15:16:15,(IN)- Exposición de servicios
+37,IT-3-Servicio / Tecnología,36,FTTH,40,2024-10-28 15:16:47,(IN)- Servicios Movistar
+37,IT-3-Servicio / Tecnología,36,Paquetes adicionales,40,2024-10-28 15:17:38,(IN)- Servicios Movistar
+37,IT-3-Servicio / Tecnología,36,Cerbero,41,2024-10-28 15:18:14,(IN)- VPN
+37,IT-3-Servicio / Tecnología,36,Site-to-Site,41,2024-10-28 15:18:27,(IN)- VPN
+37,IT-3-Servicio / Tecnología,36,(IOI)- AD TID,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOI)-CERBERO,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOI)-Contraseñas,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOI)-Edomus,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOI)-Entra ID TID,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOI)-Licencias,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOI)-O365 Global,10,2024-10-28 15:42:16,(IO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(IOL)- Buzón compartido,11,2024-10-29 10:22:18,(IO)- Lista de correo
+37,IT-3-Servicio / Tecnología,36,(IOL)- Lista @telefonica.com,11,2024-10-29 10:22:18,(IO)- Lista de correo
+37,IT-3-Servicio / Tecnología,36,(IOL)- Lista @tid.es,11,2024-10-29 10:22:18,(IO)- Lista de correo
+37,IT-3-Servicio / Tecnología,36,(IOS) Global,12,2024-10-23 10:21:40,(IO)- Servicios O365
+37,IT-3-Servicio / Tecnología,36,(IOS)- TID,12,2024-10-29 08:45:10,(IO)- Servicios O365
+37,IT-3-Servicio / Tecnología,36,gestión SIM,14,2024-10-25 12:51:12,(IP)- telefonía
+37,IT-3-Servicio / Tecnología,36,PIN/PUK,14,2024-10-29 08:50:13,(IP)- telefonía
+37,IT-3-Servicio / Tecnología,36,Roaming (urgencia),14,2024-10-29 08:50:25,(IP)- telefonía
+37,IT-3-Servicio / Tecnología,36,Tarifas/bonos,14,2024-10-25 12:51:12,(IP)- telefonía
+37,IT-3-Servicio / Tecnología,36,Acceso a Muelles y/o Entrada de Material,15,2025-06-09 13:27:11,(SD)- Logística
+37,IT-3-Servicio / Tecnología,36,Mensajería y/o traslado,15,2025-06-09 13:28:28,(SD)- Logística
+37,IT-3-Servicio / Tecnología,36,Peticiones de material adicional (no altas ni renovaciones),15,2024-10-25 13:35:32,(SD)- Logística
+37,IT-3-Servicio / Tecnología,36,Renovaciones y altas,15,2024-10-25 13:35:32,(SD)- Logística
+37,IT-3-Servicio / Tecnología,36,Retiradas de RAEES,15,2025-06-09 13:27:50,(SD)- Logística
+37,IT-3-Servicio / Tecnología,36,(SID)-DGROWTH,30,2024-10-28 14:09:39,(SI)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SID)-GUD,30,2024-10-28 14:09:39,(SI)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SID)-INCIDENCIAS NOMINA,30,2024-10-28 14:09:39,(SI)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SID)-PEOPLE BUDGET,30,2024-10-29 08:51:56,(SI)- DATOS  USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIF)- COMPRAS,32,2024-10-29 08:53:43,(SI)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(SIF)- GASTOS GADICO,32,2024-10-28 14:20:42,(SI)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(SIF)- PARTES TRABAJO,32,2024-10-28 14:20:42,(SI)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,(SIF)- SUBSIDIZES,32,2024-10-28 14:20:42,(SI)- FINANZAS
+37,IT-3-Servicio / Tecnología,36,ARGOS,42,2024-10-29 08:56:15,(SI)- ITUSER
+37,IT-3-Servicio / Tecnología,36,COMUNICACIONES,42,2024-10-29 08:56:32,(SI)- ITUSER
+37,IT-3-Servicio / Tecnología,36,MONITOR,42,2024-10-29 08:56:47,(SI)- ITUSER
+37,IT-3-Servicio / Tecnología,36,PROCESAMIENTO TICKETS,42,2024-10-29 08:57:18,(SI)- ITUSER
+37,IT-3-Servicio / Tecnología,36,WEBITUSER,42,2024-10-29 08:57:40,(SI)- ITUSER
+37,IT-3-Servicio / Tecnología,36,(SIO)- CARGA COSTES,34,2024-10-29 09:01:09,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- CARGA PEPS,34,2024-10-29 09:01:38,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- FESTIVOS,34,2024-10-29 09:02:06,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- FICH POTENCIAL,34,2024-10-29 09:02:36,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- FORMACION,34,2024-10-29 09:03:03,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- NOMINA,34,2024-10-29 09:03:31,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- NORMATIVAS,34,2024-10-29 09:04:08,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- PLIEGOS,34,2024-10-28 14:20:42,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIO)- SUBVACACIONES,34,2024-10-29 09:04:38,(SI)- OTRAS
+37,IT-3-Servicio / Tecnología,36,(SIU)- CERBERO,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- COMPRAS,36,2024-10-28 14:17:35,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- GUSER,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- INTRANET,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- LICENCIAS,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- RIS,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- TRAVEL,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SIU)- WEBITUSER,36,2024-10-28 14:20:42,(SI)- USUARIOS
+37,IT-3-Servicio / Tecnología,36,(SNC) CPD,27,2024-10-29 09:11:05,(SN)- Conectividad física
+37,IT-3-Servicio / Tecnología,36,(SNC) Puestos de trabajo,27,2024-10-23 13:17:44,(SN)- Conectividad física
+37,IT-3-Servicio / Tecnología,36,En Internet,43,2024-10-29 09:15:44,(SN)- Exposición de servicios
+37,IT-3-Servicio / Tecnología,36,En red interna,43,2024-10-29 09:16:05,(SN)- Exposición de servicios
+37,IT-3-Servicio / Tecnología,36,En RTT,43,2024-10-29 09:16:27,(SN)- Exposición de servicios
+37,IT-3-Servicio / Tecnología,36,Zona interna,44,2024-10-29 09:17:54,(SN)- Registro DNS
+37,IT-3-Servicio / Tecnología,36,Zona pública,44,2024-10-29 09:18:14,(SN)- Registro DNS
+37,IT-3-Servicio / Tecnología,36,(SNR)- Externas,45,2024-10-29 09:51:34,(SN)- Reglas de Firewall
+37,IT-3-Servicio / Tecnología,36,(SNR)- Internas,45,2024-10-29 09:51:34,(SN)- Reglas de Firewall
+37,IT-3-Servicio / Tecnología,36,(SNR)- RTT,45,2024-10-29 09:51:16,(SN)- Reglas de Firewall
+37,IT-3-Servicio / Tecnología,36,FTTH,46,2024-10-29 10:10:37,(SN)- Servicios Movistar
+37,IT-3-Servicio / Tecnología,36,Paquetes adicionales,46,2024-10-29 10:10:54,(SN)- Servicios Movistar
+37,IT-3-Servicio / Tecnología,36,(SOI)- AD TID,17,2024-10-29 10:13:43,(SO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(SOI)- CERBERO,17,2024-10-29 10:13:43,(SO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(SOI)- Contraseñas,17,2024-10-29 10:13:43,(SO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(SOI)- Edomus,17,2024-10-29 10:13:43,(SO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(SOI)- O365 Global,17,2024-10-29 10:16:43,(SO)- Identidad
+37,IT-3-Servicio / Tecnología,36,(SOL)- Buzón compartido,18,2024-10-29 10:22:18,(SO)- Lista de correo
+37,IT-3-Servicio / Tecnología,36,(SOL)- Lista @telefonica.com,18,2024-10-29 10:22:18,(SO)- Lista de correo
+37,IT-3-Servicio / Tecnología,36,(SOL)- Lista @tid.es,18,2024-10-29 10:22:18,(SO)- Lista de correo
+37,IT-3-Servicio / Tecnología,36,(SOS) Global,19,2024-10-23 10:21:40,(SO)- Servicios O365
+37,IT-3-Servicio / Tecnología,36,(SOS) TID,19,2024-10-29 11:04:23,(SO)- Servicios O365
+37,IT-3-Servicio / Tecnología,36,HW,22,2024-10-25 13:07:31,(SP)- Compra HW
+37,IT-3-Servicio / Tecnología,36,"PdT, accesorios",22,2024-10-25 13:07:05,(SP)- Compra HW
+37,IT-3-Servicio / Tecnología,36,licencias O365,23,2024-10-29 11:06:35,(SP)- Compra Intangibles
+37,IT-3-Servicio / Tecnología,36,Licencias SW,23,2024-10-25 13:04:43,(SP)- Compra Intangibles
+37,IT-3-Servicio / Tecnología,36,"Mantenimientos, Soportes",23,2024-10-25 13:09:01,(SP)- Compra Intangibles
+37,IT-3-Servicio / Tecnología,36,adquisición terminales,24,2024-10-29 11:07:15,(SP)-telefonía
+37,IT-3-Servicio / Tecnología,36,gestión SIM,24,2024-10-25 13:10:12,(SP)-telefonía
+37,IT-3-Servicio / Tecnología,36,Roaming (agendar),24,2024-10-29 11:07:23,(SP)-telefonía
+37,IT-3-Servicio / Tecnología,36,Tarifas/bonos (agendar/modificación por necesidad),24,2024-10-29 11:07:35,(SP)-telefonía
+38,IT-4-Tipo de servicio,37,Certificado,14,2024-10-28 13:40:11,(IDI)- Identidad
+38,IT-4-Tipo de servicio,37,Contraseña,14,2024-10-28 13:40:26,(IDI)- Identidad
+38,IT-4-Tipo de servicio,37,Cuenta,14,2024-10-28 13:40:38,(IDI)- Identidad
+38,IT-4-Tipo de servicio,37,Cliente VPN,11,2024-10-28 13:50:59,(IDI)- SW
+38,IT-4-Tipo de servicio,37,Office 365 Otros,11,2024-10-28 09:40:28,(IDI)- SW
+38,IT-4-Tipo de servicio,37,Otros SW,11,2024-10-28 09:40:28,(IDI)- SW
+38,IT-4-Tipo de servicio,37,Outlook,11,2024-10-28 09:40:28,(IDI)- SW
+38,IT-4-Tipo de servicio,37,SAP y ODBC,11,2024-10-28 13:52:31,(IDI)- SW
+38,IT-4-Tipo de servicio,37,Sistema operativo,11,2024-10-28 13:53:00,(IDI)- SW
+38,IT-4-Tipo de servicio,37,Teams,11,2024-10-28 09:40:28,(IDI)- SW
+38,IT-4-Tipo de servicio,37,Acceso,15,2024-10-28 14:08:10,(IID)- DGROWTH
+38,IT-4-Tipo de servicio,37,Consulta,15,2024-10-28 14:08:24,(IID)- DGROWTH
+38,IT-4-Tipo de servicio,37,Acceso,16,2024-10-28 14:11:42,(IID)-GUD
+38,IT-4-Tipo de servicio,37,Consulta,16,2024-10-28 14:11:52,(IID)-GUD
+38,IT-4-Tipo de servicio,37,Acceso,17,2024-10-28 14:12:13,(IID)-INCIDENCIAS NOMINA
+38,IT-4-Tipo de servicio,37,Consulta,17,2024-10-28 14:12:26,(IID)-INCIDENCIAS NOMINA
+38,IT-4-Tipo de servicio,37,Acceso,18,2024-10-28 14:14:42,(IID)-PEOPLE BUDGET
+38,IT-4-Tipo de servicio,37,Consulta,18,2024-10-28 14:14:51,(IID)-PEOPLE BUDGET
+38,IT-4-Tipo de servicio,37,Acceso,31,2024-10-29 08:26:10,(IIF)- COMPRAS
+38,IT-4-Tipo de servicio,37,Consulta,31,2024-10-29 08:26:29,(IIF)- COMPRAS
+38,IT-4-Tipo de servicio,37,Acceso,10,2024-10-28 14:38:26,(IIF)- GASTOS GADICO
+38,IT-4-Tipo de servicio,37,Consulta,10,2024-10-28 14:25:00,(IIF)- GASTOS GADICO
+38,IT-4-Tipo de servicio,37,Acceso,20,2024-10-28 14:35:08,(IIF)- PARTES TRABAJO
+38,IT-4-Tipo de servicio,37,Consulta,20,2024-10-28 14:35:16,(IIF)- PARTES TRABAJO
+38,IT-4-Tipo de servicio,37,Acceso,21,2024-10-28 14:35:26,(IIF)- SUBSIDIZES
+38,IT-4-Tipo de servicio,37,Consulta,21,2024-10-28 14:38:47,(IIF)- SUBSIDIZES
+38,IT-4-Tipo de servicio,37,Acceso,9,2024-10-28 13:34:31,(III)- ARGOS
+38,IT-4-Tipo de servicio,37,Consulta,9,2024-10-25 14:03:13,(III)- ARGOS
+38,IT-4-Tipo de servicio,37,Acceso,12,2024-10-28 14:37:30,(III)- COMUNICACIONES
+38,IT-4-Tipo de servicio,37,Consulta,12,2024-10-28 13:31:29,(III)- COMUNICACIONES
+38,IT-4-Tipo de servicio,37,Acceso,13,2024-10-28 14:40:14,(III)- WEBITUSER
+38,IT-4-Tipo de servicio,37,Consulta,13,2024-10-28 13:32:13,(III)- WEBITUSER
+38,IT-4-Tipo de servicio,37,Acceso,22,2024-10-28 14:55:52,(IIO)- FORMACION
+38,IT-4-Tipo de servicio,37,Consulta,22,2024-10-28 14:56:11,(IIO)- FORMACION
+38,IT-4-Tipo de servicio,37,Acceso,23,2024-10-28 14:56:24,(IIO)- NORMATIVAS
+38,IT-4-Tipo de servicio,37,Consulta,23,2024-10-28 14:56:38,(IIO)- NORMATIVAS
+38,IT-4-Tipo de servicio,37,Acceso,24,2024-10-28 14:56:51,(IIO)- PLIEGOS
+38,IT-4-Tipo de servicio,37,Consulta,24,2024-10-28 14:57:01,(IIO)- PLIEGOS
+38,IT-4-Tipo de servicio,37,Acceso,25,2024-10-28 14:58:09,(IIU)- CERBERO
+38,IT-4-Tipo de servicio,37,Consulta,25,2024-10-28 14:58:17,(IIU)- CERBERO
+38,IT-4-Tipo de servicio,37,Acceso,26,2024-10-28 14:58:39,(IIU)- GUSER
+38,IT-4-Tipo de servicio,37,Bajas,26,2024-11-05 09:21:06,(IIU)- GUSER
+38,IT-4-Tipo de servicio,37,Consulta,26,2024-10-28 14:58:55,(IIU)- GUSER
+38,IT-4-Tipo de servicio,37,Acceso,27,2024-10-28 14:59:08,(IIU)- INTRANET
+38,IT-4-Tipo de servicio,37,Consulta,27,2024-10-28 14:59:28,(IIU)- INTRANET
+38,IT-4-Tipo de servicio,37,Acceso,28,2024-10-28 14:59:47,(IIU)- LICENCIAS
+38,IT-4-Tipo de servicio,37,Consulta,28,2024-10-28 14:59:56,(IIU)- LICENCIAS
+38,IT-4-Tipo de servicio,37,Acceso,29,2024-10-28 15:00:18,(IIU)- TRAVEL
+38,IT-4-Tipo de servicio,37,Consulta,29,2024-10-28 15:00:29,(IIU)- TRAVEL
+38,IT-4-Tipo de servicio,37,HDR,30,2024-10-28 15:33:36,(INC) CPD
+38,IT-4-Tipo de servicio,37,Oeste 2,30,2024-10-28 15:33:49,(INC) CPD
+38,IT-4-Tipo de servicio,37,Sur 3,30,2024-10-28 15:35:16,(INC) CPD
+38,IT-4-Tipo de servicio,37,Cableada,7,2024-10-28 15:35:16,(INC) Puestos de trabajo
+38,IT-4-Tipo de servicio,37,Wifi,7,2024-10-23 13:19:18,(INC) Puestos de trabajo
+38,IT-4-Tipo de servicio,37,Global,32,2024-10-29 08:27:58,(IOI)-Licencias
+38,IT-4-Tipo de servicio,37,TID,32,2024-10-29 08:28:14,(IOI)-Licencias
+38,IT-4-Tipo de servicio,37,Correo electrónico,33,2024-10-29 08:32:43,(IOI)-O365 Global
+38,IT-4-Tipo de servicio,37,OneDrive,33,2024-10-29 08:32:59,(IOI)-O365 Global
+38,IT-4-Tipo de servicio,37,Teams,33,2024-10-29 08:33:25,(IOI)-O365 Global
+38,IT-4-Tipo de servicio,37,Correo electrónico,5,2024-10-23 10:39:40,(IOS) Global
+38,IT-4-Tipo de servicio,37,Integración de apps,5,2024-10-29 08:36:36,(IOS) Global
+38,IT-4-Tipo de servicio,37,OneDrive,5,2024-10-23 10:39:26,(IOS) Global
+38,IT-4-Tipo de servicio,37,Power Automate,5,2024-10-29 08:36:58,(IOS) Global
+38,IT-4-Tipo de servicio,37,PowerApps,5,2024-10-29 08:37:14,(IOS) Global
+38,IT-4-Tipo de servicio,37,PowerBI Premium,5,2024-10-23 10:22:35,(IOS) Global
+38,IT-4-Tipo de servicio,37,SharePoint,5,2024-10-23 10:38:42,(IOS) Global
+38,IT-4-Tipo de servicio,37,Teams,5,2024-10-23 10:39:13,(IOS) Global
+38,IT-4-Tipo de servicio,37,Integración de apps,34,2024-10-29 08:46:30,(IOS)- TID
+38,IT-4-Tipo de servicio,37,HDR,35,2024-10-29 09:12:12,(SNC) CPD
+38,IT-4-Tipo de servicio,37,Oeste 2,35,2024-10-29 09:12:25,(SNC) CPD
+38,IT-4-Tipo de servicio,37,Sur 3,35,2024-10-29 09:12:39,(SNC) CPD
+38,IT-4-Tipo de servicio,37,Cableada,8,2024-10-29 09:14:17,(SNC) Puestos de trabajo
+38,IT-4-Tipo de servicio,37,Wifi,8,2024-10-25 13:42:07,(SNC) Puestos de trabajo
+38,IT-4-Tipo de servicio,37,Alta,36,2024-10-29 10:14:27,(SOI)- Edomus
+38,IT-4-Tipo de servicio,37,Baja,36,2024-10-29 10:14:39,(SOI)- Edomus
+38,IT-4-Tipo de servicio,37,Modificación,36,2024-10-29 10:14:51,(SOI)- Edomus
+38,IT-4-Tipo de servicio,37,Correo electrónico,37,2024-10-29 10:17:46,(SOI)- O365 Global
+38,IT-4-Tipo de servicio,37,Alta,38,2024-10-29 10:23:37,(SOL)- Lista @telefonica.com
+38,IT-4-Tipo de servicio,37,Baja,38,2024-10-29 10:23:54,(SOL)- Lista @telefonica.com
+38,IT-4-Tipo de servicio,37,Modificación,38,2024-10-29 10:24:10,(SOL)- Lista @telefonica.com
+38,IT-4-Tipo de servicio,37,Alta,39,2024-10-29 10:24:23,(SOL)- Lista @tid.es
+38,IT-4-Tipo de servicio,37,Baja,39,2024-10-29 10:24:56,(SOL)- Lista @tid.es
+38,IT-4-Tipo de servicio,37,Modificación,39,2024-10-29 10:24:38,(SOL)- Lista @tid.es
+38,IT-4-Tipo de servicio,37,Correo electrónico,6,2024-10-23 10:42:36,(SOS) Global
+38,IT-4-Tipo de servicio,37,Integración de apps,6,2024-10-29 10:27:05,(SOS) Global
+38,IT-4-Tipo de servicio,37,OneDrive,6,2024-10-23 10:41:25,(SOS) Global
+38,IT-4-Tipo de servicio,37,PowerBI Premium,6,2024-10-23 10:22:58,(SOS) Global
+38,IT-4-Tipo de servicio,37,SharePoint,6,2024-10-23 10:40:44,(SOS) Global
+38,IT-4-Tipo de servicio,37,Teams,6,2024-10-23 10:41:13,(SOS) Global
+38,IT-4-Tipo de servicio,37,Integración de apps,40,2024-10-29 11:05:16,(SOS) TID
+38,IT-4-Tipo de servicio,37,Periféricos/accesorios,1,2023-04-04 13:24:03,HW
+38,IT-4-Tipo de servicio,37,Puesto de trabajo,1,2023-04-04 13:24:12,HW
+38,IT-4-Tipo de servicio,37,Correo electrónico,2,2024-10-25 12:58:05,Servicios O365
+38,IT-4-Tipo de servicio,37,OneDrive,2,2023-04-04 13:24:44,Servicios O365
+38,IT-4-Tipo de servicio,37,Otros servicios O365,2,2024-10-28 13:41:46,Servicios O365
+38,IT-4-Tipo de servicio,37,SharePoint,2,2023-04-04 13:24:44,Servicios O365
+38,IT-4-Tipo de servicio,37,Teams,2,2023-04-04 13:24:44,Servicios O365
