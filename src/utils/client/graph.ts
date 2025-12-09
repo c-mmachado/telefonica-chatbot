@@ -5,7 +5,10 @@ import { AuthenticationResult, ConfidentialClientApplication } from "@azure/msal
 import { AuthenticationProviderOptions } from "@microsoft/microsoft-graph-client";
 
 import { config } from "../../config/config";
-import { RequestBuilder } from "./common";
+
+export interface RequestBuilder<T> {
+    get(): Promise<T>;
+}
 
 export interface GraphClient {
     teams: TeamsRequestBuilder;

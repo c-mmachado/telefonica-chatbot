@@ -18,7 +18,6 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
 
     public async run(context: TurnContext, _message: HandlerMessage): Promise<any> {
         const activityValue: AdaptiveCardActionActivityValue = context.activity.value;
-
         const actionData: AdaptiveCardActionSelectChoiceData = activityValue?.action?.data;
 
         // Calidate that we can retrieve the state

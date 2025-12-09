@@ -6,8 +6,8 @@ import { HandlerTriggerData } from "../manager";
 import { OAuthCommandHandler } from "../handler";
 import { HandlerMessage } from "../message";
 import { AdaptiveCardTicketCardPageData } from "../../adaptiveCards/actions/actions";
-import { DefaultPagedCollectionRequest, RTClient } from "../../../utils/client/rt/rt";
-import { Queue, QueueRef } from "../../../utils/client/rt/model";
+import { RTClient } from "../../../utils/client/rt/rt";
+import { Queue } from "../../../utils/client/rt/schemas";
 
 import page0 from "../../adaptiveCards/templates/ticket/page0.json";
 
@@ -132,24 +132,27 @@ export class TicketCommandHandler extends OAuthCommandHandler {
         // Queue choices array containing the title and value of each queue to be displayed in the adaptive card
         const queueChoices: { title: string; value: string }[] = [];
 
-        // Fetch the first page of queue references
-        let queues: DefaultPagedCollectionRequest<QueueRef> | null = await this._rt.queues.get();
-
-        // Convert the queue references to queue choices and add them to the queue choices array
-        for (const queueRef of queues.items ?? []) {
-            const queue: Queue | null = queueRef.id
-                ? await this._rt.queues
-                      .id(queueRef.id)
-                      .get()
-                      .catch((error: any) => {
-                          console.error(error);
-                          return null;
-                      })
-                : null;
+        let queues = await this._rt.queues.request.get();
+        queues.items.forEach((queue: Queue) => {
             if (queue?.id && queue?.Name) {
                 queueChoices.push({ title: queue.Name, value: queue.id });
             }
-        }
+        });
+
+        // for (const queueRef of queues.items ?? []) {
+        //     const queue: Queue | null = queueRef.id
+        //         ? await this._rt.queues
+        //               .id(queueRef.id)
+        //               .request.get()
+        //               .catch((error: any) => {
+        //                   console.error(error);
+        //                   return null;
+        //               })
+        //         : null;
+        //     if (queue?.id && queue?.Name) {
+        //         queueChoices.push({ title: queue.Name, value: queue.id });
+        //     }
+        // }
 
         while (queues?.next_page) {
             // if (queues.page === undefined || queues.page === null || isNaN(queues.page)) {
@@ -157,10 +160,13 @@ export class TicketCommandHandler extends OAuthCommandHandler {
             // }
             // const page: number = queues.page + 1;
 
-            queues = await queues.next().catch((error: any) => {
-                console.error(error);
-                return null;
-            });
+            queues = (await queues
+                .next()
+                .request.get()
+                .catch((error: any) => {
+                    console.error(error);
+                    return null;
+                }))!;
 
             if (!queues) {
                 break;
@@ -170,7 +176,7 @@ export class TicketCommandHandler extends OAuthCommandHandler {
                 const queue: Queue | null = queueRef.id
                     ? await this._rt.queues
                           .id(queueRef.id)
-                          .get()
+                          .request.get()
                           .catch((error: any) => {
                               console.error(error);
                               return null;

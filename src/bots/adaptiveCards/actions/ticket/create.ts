@@ -12,8 +12,8 @@ import { ActionHandler } from "../../../commands/handler";
 import { HandlerMessage } from "../../../commands/message";
 import { HandlerTriggerData } from "../../../commands/manager";
 import { BotConfiguration } from "../../../../config/config";
-// import { RTClient } from "../../../../utils/client/rt/rt";
-// import { Queue, Ticket } from "../../../../utils/client/rt/model";
+import { RTClient } from "../../../../utils/client/rt/rt";
+import { Queue, Ticket } from "../../../../utils/client/rt/schemas";
 import { GraphClient } from "../../../../utils/client/graph";
 import { isKeyOf } from "../../../../utils/misc";
 // import { LogsRepository } from "../../../server/repositories/logs";
@@ -25,7 +25,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
 
     constructor(
         private readonly _config: BotConfiguration,
-        // private readonly _rt: RTClient,
+        private readonly _rt: RTClient,
         private readonly _graph: GraphClient // private readonly _logs: LogsRepository
     ) {}
 
@@ -121,7 +121,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
         console.debug(`threadMessages.length: ${replies?.length}`);
 
         // Get the chosen queue from 'ticketCategoryChoiceSet' and get the queue from the API
-        // const queue: Queue = await this._rt.queues.id(state.ticket.ticketCategoryChoiceSet.value).get();
+        const queue: Queue = await this._rt.queues.id(state.ticket.ticketCategoryChoiceSet.value).request.get();
 
         console.debug(`state.ticket:`, state.ticket);
 
@@ -141,17 +141,15 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
         }
 
         // Create the ticket in the RT API
-        // const ticket: Ticket = await this._rt.tickets.postTickets({
-        //     requestBody: {
-        //         Queue: queue.id,
-        //         Subject: thread.subject ?? "No Subject",
-        //         Status: state.ticket.ticketStateChoiceSet.value,
-        //         Content: state.ticket.ticketDescriptionInput.value,
-        //         TimeWorked: state.ticket.ticketTimeTakenInput.value,
-        //         Requestor: trigger.threadFrom.email,
-        //         Owner: trigger.replyFrom.email,
-        //     } as any,
-        // });
+        const ticket: Ticket = await this._rt.ticket.request.queryParam("Queue", queue.id).post({
+            Subject: thread.subject ?? "No Subject",
+            Status: state.ticket.ticketStateChoiceSet.value,
+            Content: state.ticket.ticketDescriptionInput.value,
+            TimeWorked: state.ticket.ticketTimeTakenInput.value,
+            Requestor: trigger.threadFrom.email,
+            Owner: trigger.replyFrom.email,
+            CustomFields: customFieldsBody,
+        });
         // queue,
         // thread.subject ?? "No Subject",
         // state.ticket.ticketStateChoiceSet.value,

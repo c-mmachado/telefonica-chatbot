@@ -9,7 +9,7 @@ import {
     AdaptiveCardActionPositiveTicketPageData,
     AdaptiveCardTicketCardPageData,
 } from "../actions";
-import { CustomField } from "../../../../utils/client/rt/model";
+import { CustomField } from "../../../../utils/client/rt/schemas";
 import { isKeyOf } from "../../../../utils/misc";
 import { RTClient } from "../../../../utils/client/rt/rt";
 
@@ -87,7 +87,10 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
         if (!actionData.ticketCategoryChoiceSet) {
             return [];
         }
-        const customFields: any[] = await this._rt.queues.id(actionData.ticketCategoryChoiceSet).ticketCustomFields.all;
+        const customFields: CustomField[] = await this._rt.queues
+            .id(actionData.ticketCategoryChoiceSet)
+            .ticketCustomFields.request.get();
+
         customFields.sort((a, b) => {
             if (a.id < b.id) {
                 return -1;

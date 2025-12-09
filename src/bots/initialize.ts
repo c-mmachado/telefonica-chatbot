@@ -43,7 +43,7 @@ const arah = new AuthRefreshActionHandler();
 
 const tch = new TicketCommandHandler(rtClient);
 const tnxah = new TicketAdaptiveCardNextActionHandler(rtClient);
-const tpah = new TicketAdaptiveCardCreateActionHandler(config, graphClient); //rtClient
+const tpah = new TicketAdaptiveCardCreateActionHandler(config, rtClient, graphClient);
 const tnah = new TicketAdaptiveCardCancelActionHandler();
 const tscah = new TicketAdaptiveCardSelectChoiceActionHandler(); //rtClient
 

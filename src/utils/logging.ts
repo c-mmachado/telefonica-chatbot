@@ -11,8 +11,21 @@ import { maskObject } from "./misc";
 import { types } from "util";
 import { normalize } from "path";
 
+/**
+ * Stores the original console before being overridden by the logger so that it can still be used within the logger transport.
+ *
+ * @private
+ */
 const originalConsole = { ...console };
 
+/**
+ * The root logger for the application.
+ *
+ * This logger is configured to provide pretty-printed logs with masking of sensitive information, such as passwords and secrets.
+ * It overrides the default console methods to ensure all logs go through this logger for consistent formatting and masking.
+ *
+ * @public
+ */
 export const logger: Logger<ILogObj> = new Logger({
     type: "pretty",
     name: "RootLogger",
@@ -106,6 +119,17 @@ export const logger: Logger<ILogObj> = new Logger({
 });
 // (logger as any).runtime.prettyFormatLogObj = prettyFormatLogObj;
 
+/**
+ * Masks sensitive information in the provided arguments.
+ *
+ * Function responsible for recursively traversing `args` and making keys that match a regular expression,
+ * replacing their values with asterisks (`******`).
+ *
+ * @param args An array of arguments to be masked.
+ * @returns The masked array of arguments.
+ *
+ * @private
+ */
 function mask(args: unknown[]): unknown[] {
     for (let i = 0; i < args.length; i++) {
         if (args[i] === null || args[i] === undefined || args[i] instanceof Error) {
@@ -120,6 +144,15 @@ function mask(args: unknown[]): unknown[] {
     return (logger as any)._mask(args);
 }
 
+/**
+ * Formats the log object by separating errors from other arguments and applying color formatting.
+ *
+ * @param maskedArgs An array of masked arguments to be formatted.
+ * @param settings The logger settings used for formatting.
+ * @returns An object containing the formatted `args` and `errors`.
+ *
+ * @private
+ */
 function formatLogObj(maskedArgs: unknown[], settings: ISettings<ILogObj>): { args: unknown[]; errors: string[] } {
     // console.log("formatLogObj called with maskedArgs", maskedArgs);
     // console.log("settings", settings);
@@ -141,6 +174,12 @@ function formatLogObj(maskedArgs: unknown[], settings: ISettings<ILogObj>): { ar
     );
 }
 
+/**
+ * Checks if the provided value is an {@link Error} instance.
+ *
+ * @param e The value to check.
+ * @returns `true` if the value is an {@link Error} instance, `false` otherwise.
+ */
 function isError(e: unknown): e is Error {
     return types?.isNativeError != null ? types.isNativeError(e) : e instanceof Error;
 }
@@ -160,6 +199,15 @@ function isError(e: unknown): e is Error {
 //   );
 // }
 
+/**
+ * Formats an {@link Error} object into a pretty string representation.
+ *
+ * @param error The {@link Error} object to format.
+ * @param settings The logger settings used for formatting.
+ * @returns A formatted string representation of `error`.
+ *
+ * @private
+ */
 function prettyFormatErrorObj(error: Error, settings: ISettings<ILogObj>): string {
     const errorStackStr = getErrorTrace(error).map((stackFrame: IStackFrame) => {
         return _formatTemplate(settings, settings.prettyErrorStackTemplate, { ...stackFrame }, true);
@@ -180,6 +228,14 @@ function prettyFormatErrorObj(error: Error, settings: ISettings<ILogObj>): strin
     return _formatTemplate(settings, settings.prettyErrorTemplate, placeholderValuesError);
 }
 
+/**
+ * Extracts the stack trace from an {@link Error} object.
+ *
+ * @param error The {@link Error} object from which to extract the stack trace.
+ * @returns An array of {@link IStackFrame} representing the stack trace.
+ *
+ * @private
+ */
 function getErrorTrace(error: Error): IStackFrame[] {
     const stackFrames = error?.stack?.split("\n")?.reduce((result: IStackFrame[], line: string): IStackFrame[] => {
         if (line.includes("    at ")) {
@@ -190,6 +246,14 @@ function getErrorTrace(error: Error): IStackFrame[] {
     return stackFrames!;
 }
 
+/**
+ * Parses a single line of an error stack trace into an {@link IStackFrame} object.
+ *
+ * @param line The line of the stack trace to parse.
+ * @returns An {@link IStackFrame} object representing the parsed stack frame.
+ *
+ * @private
+ */
 function stackLineToStackFrame(line: string): IStackFrame {
     const pathResult: IStackFrame = {
         fullFilePath: undefined,
@@ -228,8 +292,46 @@ function stackLineToStackFrame(line: string): IStackFrame {
     return pathResult;
 }
 
+/**
+ * Type representing styles for log formatting.
+ *
+ * @private
+ */
 type Style = string | string[] | Record<string, string | string[]>;
 
+/**
+ * Formats a template string by replacing placeholders with corresponding values and applying styles.
+ *
+ * Supports ANSI color codes for styling when `settings.stylePrettyLogs` is enabled in the logger settings and
+ * applies styles defined in `settings.prettyLogStyles`.
+ *
+ * Placeholders in the template are denoted by `{{placeholderName}}`
+ * and are replaced with values from the `values` object. If a placeholder does not have a corresponding value and
+ * `hideUnsetPlaceholder` is true, it is replaced with an empty string; otherwise, it remains unchanged.
+ *
+ * Example:
+ * ```ts
+ * const settings: ISettings<ILogObj> = {
+ *   stylePrettyLogs: true,
+ *  prettyLogStyles: {
+ *    name: "green",
+ *  },
+ * };
+ *
+ * const template = "Hello, {{name}}!";
+ * const values = { name: "World" };
+ * const result = _formatTemplate(settings, template, values);
+ * // result: "Hello, \u001b[32mWorld\u001b[39m!"
+ * ```
+ *
+ * @param settings The logger settings used for formatting.
+ * @param template The template string containing placeholders.
+ * @param values The values to replace placeholders with.
+ * @param hideUnsetPlaceholder Whether to hide placeholders that do not have corresponding values.
+ * @returns The formatted string with placeholders replaced and styles applied.
+ *
+ * @private
+ */
 function _formatTemplate(
     settings: ISettings<ILogObj>,
     template: string | undefined,
@@ -267,6 +369,14 @@ function _formatTemplate(
     });
 }
 
+/**
+ * Applies color formatting to strings, URLs, file paths, and quoted strings within the provided argument.
+ *
+ * @param arg The argument to apply color formatting to.
+ * @returns The color-formatted string or the original argument if no formatting is applied.
+ *
+ * @private
+ */
 function _colorString(arg: unknown): string | unknown {
     if (arg instanceof Error) {
         arg.message = _colorString(arg.message) as string;
@@ -298,6 +408,11 @@ function _colorString(arg: unknown): string | unknown {
     return arg;
 }
 
+/**
+ * Available keyword based styles for pretty log formatting.
+ *
+ * @private
+ */
 const prettyLogStyles = {
     reset: [0, 0],
     bold: [1, 22],
