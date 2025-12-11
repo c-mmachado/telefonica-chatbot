@@ -40,17 +40,17 @@ export enum HttpContentTypes {
  */
 export enum HttpMethods {
     /** HTTP GET method */
-    Get = "GET",
+    Get = "get",
 
     /**  HTTP POST method */
-    Post = "POST",
+    Post = "post",
 
     /** HTTP PUT method */
-    Put = "PUT",
+    Put = "put",
 
     /** HTTP PATCH method */
-    Patch = "PATCH",
+    Patch = "patch",
 
     /** HTTP DELETE method */
-    Delete = "DELETE",
+    Delete = "delete",
 }

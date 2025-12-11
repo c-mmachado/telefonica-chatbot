@@ -132,7 +132,7 @@ class DefaultQueuesRequestBuilder extends BaseSchemaClientRequestBuilder<QueuesC
             after: {
                 get: async (response: unknown) => {
                     if (!response || typeof response !== "object") {
-                        return Promise.reject(new Error("Invalid response format for queues"));
+                        return Promise.reject(new Error("Invalid response format for resource '/queues'"));
                     }
                     const page = response as RTPagedCollection<QueueRef>;
                     const refs = page.items ?? [];
