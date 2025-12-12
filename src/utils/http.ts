@@ -38,7 +38,7 @@ export enum HttpContentTypes {
  *
  * @public
  */
-export enum HttpMethods {
+export enum HttpMethod {
     /** HTTP GET method */
     Get = "get",
 

@@ -1,5 +1,5 @@
 import { BotConfiguration, config } from "../../config/config";
-import { HttpContentTypes, HttpHeaders, HttpMethods } from "../http";
+import { HttpContentTypes, HttpHeaders, HttpMethod } from "../http";
 
 export interface TokenResponse {
     token_type: "Bearer";
@@ -33,7 +33,7 @@ export class DefaultSharepointClient implements SharepointClient {
 
     private async _getToken(config: BotConfiguration, options: SharepointClientOptions): Promise<TokenResponse> {
         return await fetch(`${config.authority}/oauth2/v2.0/token`, {
-            method: HttpMethods.Post,
+            method: HttpMethod.Post,
             headers: {
                 [HttpHeaders.ContentType]: HttpContentTypes.FormUrlEncoded,
             },
