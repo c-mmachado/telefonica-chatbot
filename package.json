@@ -25,8 +25,6 @@
     "nodemon:help": "nodemon -help",
     "shx:help": "shx help",
     "env-cmd:help": "env-cmd --help",
-    "openapi:help": "openapi --help",
-    "generate:rt": "openapi  --input ./data/rt/openapi.yml --output ./src/utils/client/rt --name RTClient --useOptions",
     "test": "echo \"Error: no tests specified\" && exit 1"
   },
   "repository": {
