@@ -9,12 +9,13 @@ import {
 } from "../actions";
 import { ActionHandler } from "../../../commands/handler";
 import { HandlerMessage } from "../../../commands/message";
-// import { RTClient } from "../../../../utils/client/rt";
+import { RTClient } from "../../../../utils/client/rt/client";
+import { CustomFieldValue } from "../../../../utils/client/rt/schemas/customFieldValues";
 
 export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandler {
     public pattern: string = "selectChoiceTicket";
 
-    constructor() {} //private readonly _rt: RTClient
+    constructor(private readonly _rt: RTClient) {} //
 
     public async run(context: TurnContext, _message: HandlerMessage): Promise<any> {
         const activityValue: AdaptiveCardActionActivityValue = context.activity.value;
@@ -208,14 +209,34 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
 
                 let choices: { title: string; value: string }[] = [];
                 if (customFieldValue) {
-                    choices = []
-                    // await this._rt
+                    // choices = await this._rt
                     //     .customFieldValues(customFieldState.id, customFieldValue)
                     //     .then((response: CustomFieldValue[]) => {
                     //         return response.map((value: CustomFieldValue) => {
                     //             return { title: value.Name, value: value.Name };
                     //         });
                     //     });
+                    const fieldsWithCategory = (items: CustomFieldValue[]): { title: string; value: string }[] => {
+                        return items
+                            .map((value: CustomFieldValue) => {
+                                if (value.Category === customFieldValue) {
+                                    return { title: value.Name, value: value.Name };
+                                }
+                                return null;
+                            })
+                            .filter((v) => v !== null) as { title: string; value: string }[];
+                    };
+
+                    await this._rt.customFields
+                        .id(customFieldState.id)
+                        .customFieldValues.request.get()
+                        .then(async (response) => {
+                            choices.push(...fieldsWithCategory(response.items));
+                            while (response.next_page) {
+                                response = await response.next().request.get();
+                                choices.push(...fieldsWithCategory(response.items));
+                            }
+                        });
                 }
 
                 console.debug(`choices:`, choices);

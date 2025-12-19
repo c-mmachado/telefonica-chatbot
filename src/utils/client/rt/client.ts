@@ -1,311 +1,45 @@
-import { HttpContentTypes, HttpHeaders, HttpMethods } from "../../../utils/http";
+import { HttpContentTypes, HttpHeaders, HttpMethod } from "../../http";
 import { config } from "../../../config/config";
-import {
-    TypedHyperlinkEntity,
-    RTConfig,
-    QueuesConfig,
-    QueueIdConfig,
-    Queue,
-    CustomField,
-    CustomFieldValue,
-    CustomFieldsConfig,
-    CustomFieldConfig,
-    CustomFieldValuesConfig,
-    CustomFieldValueConfig,
-    TicketsConfig,
-    Ticket,
-    CreateTicket,
-    rtSchemaConfig,
-    queuesSchemaConfig,
-    queueSchemaConfig,
-    customFieldsSchemaConfig,
-    customFieldSchemaConfig,
-    customFieldValuesSchemaConfig,
-    customFieldValueSchemaConfig,
-    ticketsSchemaConfig,
-    ticketSchemaConfig,
-    RTPagedCollection,
-    RefHyperlinkEntity,
-    QueueTicketCustomFieldsConfig,
-    queueTicketCustomFieldsSchemaConfig,
-    TicketIdConfig,
-    QueueCustomFieldsConfig,
-    queueCustomFieldsSchemaConfig,
-    HyperlinkRef,
-    TicketConfig,
-    ticketIdSchemaConfig,
-    QueueRef,
-    createRTNavigatablePagedCollection,
-} from "./schemas";
-import {
-    Client,
-    createClient,
-    BaseSchemaClientRequestBuilder,
-    SchemaClientRequestBuilder,
-    PagedSchemaClientRequestBuilder,
-} from "../base";
+import { createClient, Client } from "../base";
+import { RootEndpointConfigurer, EndpointFactory as RTEndpointFactory } from "./schemas/rt";
+import { QueuesEndpointConfigurer, EndpointFactory as QEndpointFactory } from "./schemas/queues";
+import { CustomFieldsEndpointConfigurer, EndpointFactory as CFEndpointFactory } from "./schemas/customFields";
+import { TicketsEndpointConfigurer, EndpointFactory as TEndpointFactory } from "./schemas/tickets";
+import { UsersEndpointConfigurer, EndpointFactory as UEndpointFactory } from "./schemas/users";
 
 export interface RTClient {
-    rt: RootRequestBuilder;
+    rt: RootEndpointConfigurer;
 
-    queues: QueuesRequestBuilder;
+    queues: QueuesEndpointConfigurer;
 
-    customFields: CustomFieldsRequestBuilder;
+    customFields: CustomFieldsEndpointConfigurer;
 
-    tickets: TicketsRequestBuilder;
+    tickets: TicketsEndpointConfigurer;
 
-    ticket: TicketRequestBuilder;
+    users: UsersEndpointConfigurer;
 }
 
-export interface RootRequestBuilder extends SchemaClientRequestBuilder<RTConfig> {}
+class DefaultRTClient implements RTClient {
+    constructor(private readonly _client: Client) {}
 
-export interface QueuesRequestBuilder extends PagedSchemaClientRequestBuilder<QueuesConfig> {
-    id(queueId: string): QueueIdRequestBuilder;
-}
-
-export interface QueueIdRequestBuilder extends SchemaClientRequestBuilder<QueueIdConfig> {
-    customFields: CustomFieldsRequestBuilder;
-
-    ticketCustomFields: QueueTicketCustomFieldsRequestBuilder;
-}
-
-export interface QueueCustomFieldsRequestBuilder extends PagedSchemaClientRequestBuilder<QueueCustomFieldsConfig> {
-    id(customFieldId: string): CustomFieldIdRequestBuilder;
-}
-
-export interface QueueTicketCustomFieldsRequestBuilder
-    extends SchemaClientRequestBuilder<QueueTicketCustomFieldsConfig> {
-    id(customFieldId: string): CustomFieldIdRequestBuilder;
-}
-
-export interface CustomFieldsRequestBuilder extends PagedSchemaClientRequestBuilder<CustomFieldsConfig> {
-    id(customFieldId: string): CustomFieldIdRequestBuilder;
-}
-
-export interface CustomFieldIdRequestBuilder extends SchemaClientRequestBuilder<CustomFieldConfig> {
-    customFieldValues: CustomFieldValuesRequestBuilder;
-}
-
-export interface CustomFieldValuesRequestBuilder extends PagedSchemaClientRequestBuilder<CustomFieldValuesConfig> {
-    id(customFieldValueId: string): CustomFieldValueIdRequestBuilder;
-}
-
-export interface CustomFieldValueIdRequestBuilder extends SchemaClientRequestBuilder<CustomFieldValueConfig> {}
-
-export interface TicketsRequestBuilder extends PagedSchemaClientRequestBuilder<TicketsConfig> {
-    id(ticketId: string): TicketIdRequestBuilder;
-}
-
-export interface TicketRequestBuilder extends SchemaClientRequestBuilder<TicketConfig> {}
-
-export interface TicketIdRequestBuilder extends SchemaClientRequestBuilder<TicketIdConfig> {}
-
-export class DefaultRTClient implements RTClient {
-    public readonly rt: RootRequestBuilder;
-
-    public readonly queues: QueuesRequestBuilder;
-
-    public readonly customFields: CustomFieldsRequestBuilder;
-
-    public readonly tickets: TicketsRequestBuilder;
-
-    public readonly ticket: TicketRequestBuilder;
-
-    constructor(private readonly _client: Client) {
-        this.rt = new DefaultRootRequestBuilder(this._client);
-        this.queues = new DefaultQueuesRequestBuilder(this._client);
-        this.customFields = new DefaultCustomFieldsRequestBuilder(this._client);
-        this.tickets = new DefaultTicketsRequestBuilder(this._client);
-        this.ticket = new DefaultTicketRequestBuilder(this._client);
-    }
-}
-
-class DefaultRootRequestBuilder extends BaseSchemaClientRequestBuilder<RTConfig> implements RootRequestBuilder {
-    constructor(client: Client) {
-        super(client, rtSchemaConfig);
-    }
-}
-
-class DefaultQueuesRequestBuilder extends BaseSchemaClientRequestBuilder<QueuesConfig> implements QueuesRequestBuilder {
-    constructor(client: Client) {
-        super(client, queuesSchemaConfig, {
-            after: {
-                get: async (response: unknown) => {
-                    if (!response || typeof response !== "object") {
-                        return Promise.reject(new Error("Invalid response format for resource '/queues'"));
-                    }
-                    const page = response as RTPagedCollection<QueueRef>;
-                    const refs = page.items ?? [];
-                    const queues: Queue[] = await Promise.all(
-                        refs
-                            .filter((ref) => ref.ref === HyperlinkRef.Queue && ref.id)
-                            .map((ref) => rt.queues.id(ref.id!).request.get())
-                    );
-                    const newPage: RTPagedCollection<Queue> = {
-                        ...page,
-                        items: queues,
-                    };
-                    return Promise.resolve(
-                        createRTNavigatablePagedCollection<QueuesConfig, Queue>(
-                            this.client,
-                            queuesSchemaConfig,
-                            newPage
-                        )
-                    );
-                },
-            },
-        });
+    public get rt(): RootEndpointConfigurer {
+        return RTEndpointFactory.rt(this._client);
     }
 
-    public id(queueId: string): QueueIdRequestBuilder {
-        return new DefaultQueueIdRequestBuilder(this.client, queueId);
-    }
-}
-
-class DefaultQueueIdRequestBuilder
-    extends BaseSchemaClientRequestBuilder<QueueIdConfig>
-    implements QueueIdRequestBuilder
-{
-    constructor(client: Client, private readonly _queueId: string) {
-        super(client, queueSchemaConfig);
-        this.variable("id", this._queueId);
+    public get queues(): QueuesEndpointConfigurer {
+        return QEndpointFactory.queues(this._client);
     }
 
-    public get customFields(): QueueCustomFieldsRequestBuilder {
-        return new DefaultQueueCustomFieldsRequestBuilder(this.client);
+    public get customFields(): CustomFieldsEndpointConfigurer {
+        return CFEndpointFactory.customFields(this._client);
     }
 
-    public get ticketCustomFields(): QueueTicketCustomFieldsRequestBuilder {
-        return new DefaultQueueTicketCustomFieldsRequestBuilder(this.client, this._queueId);
-    }
-}
-
-class DefaultQueueCustomFieldsRequestBuilder
-    extends BaseSchemaClientRequestBuilder<QueueCustomFieldsConfig>
-    implements QueueCustomFieldsRequestBuilder
-{
-    constructor(client: Client) {
-        super(client, queueCustomFieldsSchemaConfig);
+    public get tickets(): TicketsEndpointConfigurer {
+        return TEndpointFactory.tickets(this._client);
     }
 
-    public id(customFieldId: string): CustomFieldIdRequestBuilder {
-        return new DefaultCustomFieldIdRequestBuilder(this.client, customFieldId);
-    }
-}
-
-class DefaultQueueTicketCustomFieldsRequestBuilder
-    extends BaseSchemaClientRequestBuilder<QueueTicketCustomFieldsConfig>
-    implements QueueTicketCustomFieldsRequestBuilder
-{
-    constructor(client: Client, private readonly _queueId: string) {
-        super(client, queueTicketCustomFieldsSchemaConfig, {
-            after: {
-                get: async (response: unknown): Promise<CustomField[]> => {
-                    if (!response || typeof response !== "object") {
-                        return Promise.reject(new Error("Invalid response format for queue ticket custom fields"));
-                    }
-                    const refs = (response as Queue).TicketCustomFields ?? [];
-                    const fields = [];
-                    for (const ref of refs) {
-                        if (ref.ref === HyperlinkRef.CustomField && ref.id) {
-                            fields.push(await rt.customFields.id(ref.id).request.get());
-                        }
-                    }
-                    return Promise.resolve(fields);
-                },
-            },
-        });
-        this.variable("id", this._queueId);
-    }
-
-    public id(customFieldId: string): CustomFieldIdRequestBuilder {
-        return new DefaultCustomFieldIdRequestBuilder(this.client, customFieldId);
-    }
-}
-
-class DefaultCustomFieldsRequestBuilder
-    extends BaseSchemaClientRequestBuilder<CustomFieldsConfig>
-    implements CustomFieldsRequestBuilder
-{
-    constructor(client: Client) {
-        super(client, customFieldsSchemaConfig);
-    }
-
-    public id(customFieldId: string): CustomFieldIdRequestBuilder {
-        return new DefaultCustomFieldIdRequestBuilder(this.client, customFieldId);
-    }
-}
-
-class DefaultCustomFieldIdRequestBuilder
-    extends BaseSchemaClientRequestBuilder<CustomFieldConfig>
-    implements CustomFieldIdRequestBuilder
-{
-    constructor(client: Client, private _customFieldId: string) {
-        super(client, customFieldSchemaConfig);
-        this.variable("id", this._customFieldId);
-    }
-
-    public get customFieldValues(): CustomFieldValuesRequestBuilder {
-        return new DefaultCustomFieldValuesRequestBuilder(this.client, this._customFieldId);
-    }
-}
-
-class DefaultCustomFieldValuesRequestBuilder
-    extends BaseSchemaClientRequestBuilder<CustomFieldValuesConfig>
-    implements CustomFieldValuesRequestBuilder
-{
-    constructor(client: Client, private readonly _customFieldId: string) {
-        super(client, customFieldValuesSchemaConfig);
-        this.variable("id", this._customFieldId);
-    }
-
-    public id(customFieldValueId: string): CustomFieldValueIdRequestBuilder {
-        return new DefaultCustomFieldValueIdRequestBuilder(this.client, this._customFieldId, customFieldValueId);
-    }
-}
-
-class DefaultCustomFieldValueIdRequestBuilder
-    extends BaseSchemaClientRequestBuilder<CustomFieldValueConfig>
-    implements CustomFieldValueIdRequestBuilder
-{
-    constructor(client: Client, private readonly _customFieldId: string, private readonly _customFieldValueId: string) {
-        super(client, customFieldValueSchemaConfig);
-        this.variable("id", this._customFieldId);
-        this.variable("value_id", this._customFieldValueId);
-    }
-}
-
-class DefaultTicketsRequestBuilder
-    extends BaseSchemaClientRequestBuilder<TicketsConfig>
-    implements TicketsRequestBuilder
-{
-    constructor(client: Client) {
-        super(client, ticketsSchemaConfig);
-    }
-
-    public id(ticketId: string): TicketIdRequestBuilder {
-        return new DefaultTicketIdRequestBuilder(this.client, ticketId);
-    }
-}
-
-class DefaultTicketIdRequestBuilder
-    extends BaseSchemaClientRequestBuilder<TicketIdConfig>
-    implements TicketIdRequestBuilder
-{
-    // public readonly customFields: CustomFieldsRequestBuilder = new DefaultCustomFieldsRequestBuilder(
-    //     this.client,
-    //     `ticket/${this._ticket.id}`
-    // );
-
-    constructor(client: Client, ticketId: string) {
-        super(client, ticketIdSchemaConfig);
-        this.variable("id", ticketId);
-    }
-}
-
-class DefaultTicketRequestBuilder extends BaseSchemaClientRequestBuilder<TicketConfig> implements TicketRequestBuilder {
-    constructor(client: Client) {
-        super(client, ticketSchemaConfig);
+    public get users(): UsersEndpointConfigurer {
+        return UEndpointFactory.users(this._client);
     }
 }
 
@@ -323,7 +57,7 @@ export class APIClient {
 
         // Fetch the cookie from the API using the supplied credentials
         const cookie: string | null = await fetch(`${this._config.apiEndpoint}`, {
-            method: HttpMethods.Post,
+            method: HttpMethod.Post,
             headers: {
                 [HttpHeaders.ContentType]: HttpContentTypes.FormUrlEncoded,
             },
@@ -388,7 +122,7 @@ export class APIClient {
 
         // Fetch the data from the API as a GET request
         return fetch(endpoint, {
-            method: HttpMethods.Get,
+            method: HttpMethod.Get,
             headers: {
                 Cookie: this._cookie,
                 Accept: HttpContentTypes.Json,
@@ -492,7 +226,7 @@ export class APIClient {
 
         // Create the ticket using the supplied queue and subject
         const createTicket: CreateTicket = await fetch(endpoint, {
-            method: HttpMethods.Post,
+            method: HttpMethod.Post,
             headers: {
                 Cookie: this._cookie!, // FIXME: Cookie is not guaranteed to be not null
                 [HttpHeaders.ContentType]: HttpContentTypes.Json,
@@ -557,7 +291,7 @@ export class APIClient {
         this._cookie = await this.login();
 
         return await fetch(endpoint, {
-            method: HttpMethods.Put,
+            method: HttpMethod.Put,
             headers: {
                 Cookie: this._cookie!, // FIXME: Cookie is not guaranteed to be not null
                 [HttpHeaders.ContentType]: HttpContentTypes.Json,
@@ -628,7 +362,7 @@ export class APIClient {
         }
 
         const createComment: string[] = await fetch(endpoint, {
-            method: HttpMethods.Post,
+            method: HttpMethod.Post,
             headers: {
                 Cookie: this._cookie!, // FIXME: Cookie is not guaranteed to be not null
                 [HttpHeaders.ContentType]: HttpContentTypes.Json,
@@ -794,14 +528,14 @@ const client = createClient(
     config.apiBasePath,
     async (): Promise<{ headerName: string; value: string }> => {
         return fetch(config.apiEndpoint, {
-            method: HttpMethods.Post,
+            method: HttpMethod.Post,
             headers: {
                 [HttpHeaders.ContentType]: HttpContentTypes.FormUrlEncoded,
             },
             body: new URLSearchParams({
                 user: config.apiUsername,
                 pass: config.apiPassword,
-                next: "7a73ae647301ce8bdff23044613b37a3",
+                next: "7a73ae647301ce8bdff23044613b37a3", // ?
             }),
         }).then(async (response: Response): Promise<{ headerName: string; value: string }> => {
             if (!response.ok) {
@@ -821,112 +555,98 @@ const client = createClient(
 );
 export const rt: RTClient = new DefaultRTClient(client);
 
-rt.rt.request.get().then((response) => {});
+// rt.rt.request.get().then((response) => {});
 
-rt.ticket.request
-    .queryParam("Queue", "1")
-    .post({
-        Subject: "Test Ticket from API Client",
-        Status: "new",
-        Requestor: "user@example.com",
-        Owner: "owner@example.com",
-        Description: "This is a test ticket created using the RT API Client.",
-        CustomFields: {
-            Priority: "High",
-        },
-    })
-    .then((response) => {});
+// rt.tickets.create.request
+//     .queryParam("Queue", "1")
+//     .post({
+//         Subject: "Test Ticket from API Client",
+//         Status: "new",
+//         Requestor: "user@example.com",
+//         Owner: "owner@example.com",
+//         Description: "This is a test ticket created using the RT API Client.",
+//         CustomFields: {
+//             Priority: "High",
+//         },
+//     })
+//     .then((response) => {});
 
-rt.tickets.request.get().then((response) => {});
+// rt.tickets
+//     .id("1")
+//     .correspond.request.post({
+//         Subject: "Test Correspondence",
+//         Content: "This is a test correspondence added to the ticket.",
+//         ContentType: HttpContentTypes.TextPlain,
+//         TimeTaken: "5",
+//     })
+//     .then((response) => {});
 
-rt.tickets
-    .id("1")
-    .request.get()
-    .then((response) => {});
+// rt.tickets.request.get().then((response) => {});
 
-rt.tickets
-    .id("1")
-    .request.put({
-        Status: "open",
-    })
-    .then((response) => {});
+// rt.tickets
+//     .id("1")
+//     .request.get()
+//     .then((response) => {});
 
-rt.customFields.request.get().then((response) => {});
+// rt.tickets
+//     .id("1")
+//     .request.put({
+//         Status: "open",
+//     })
+//     .then((response) => {});
 
-rt.customFields
-    .id("1")
-    .request.get()
-    .then((response) => {});
+// rt.customFields.request.get().then((response) => {});
 
-rt.customFields
-    .id("1")
-    .customFieldValues.request.get()
-    .then((response) => {});
+// rt.customFields
+//     .id("1")
+//     .request.get()
+//     .then((response) => {});
 
-rt.customFields
-    .id("1")
-    .customFieldValues.id("1")
-    .request.get()
-    .then((response) => {});
+// rt.customFields
+//     .id("1")
+//     .customFieldValues.request.get()
+//     .then((response) => {});
 
-rt.queues.request.get().then((response) => {
-    response
-        .next()
-        .request.get()
-        .then((nextResponse) => {
-            nextResponse?.items[0].id;
-        });
-});
+// rt.customFields
+//     .id("1")
+//     .customFieldValues.id("1")
+//     .request.get()
+//     .then((response) => {});
 
-rt.queues
-    .id("1")
-    .request.get()
-    .then((response) => {});
+// rt.queues.request.get().then((response) => {
+//     response
+//         .next()
+//         .request.get()
+//         .then((nextResponse) => {
+//             nextResponse?.items[0].id;
+//         });
+// });
 
-rt.queues
-    .id("1")
-    .customFields.request.get()
-    .then((response) => {});
+// rt.queues
+//     .id("1")
+//     .request.get()
+//     .then((response) => {});
 
-rt.queues
-    .id("1")
-    .customFields.id("1")
-    .request.get()
-    .then((response) => {});
+// rt.queues
+//     .id("1")
+//     .ticketCustomFields.request.get()
+//     .then((response) => {});
 
-rt.queues
-    .id("1")
-    .customFields.id("1")
-    .customFieldValues.request.get()
-    .then((response) => {});
+// rt.queues
+//     .id("1")
+//     .ticketCustomFields.id("1")
+//     .request.get()
+//     .then((response) => {});
 
-rt.queues
-    .id("1")
-    .customFields.id("1")
-    .customFieldValues.id("1")
-    .request.get()
-    .then((response) => {});
+// rt.queues
+//     .id("1")
+//     .ticketCustomFields.id("1")
+//     .customFieldValues.request.get()
+//     .then((response) => {});
 
-rt.queues
-    .id("1")
-    .ticketCustomFields.request.get()
-    .then((response) => {});
-
-rt.queues
-    .id("1")
-    .ticketCustomFields.id("1")
-    .request.get()
-    .then((response) => {});
-
-rt.queues
-    .id("1")
-    .ticketCustomFields.id("1")
-    .customFieldValues.request.get()
-    .then((response) => {});
-
-rt.queues
-    .id("1")
-    .ticketCustomFields.id("1")
-    .customFieldValues.id("1")
-    .request.get()
-    .then((response) => {});
+// rt.queues
+//     .id("1")
+//     .ticketCustomFields.id("1")
+//     .customFieldValues.id("1")
+//     .request.get()
+//     .then((response) => {});

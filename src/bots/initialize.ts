@@ -17,7 +17,7 @@ import { TicketAdaptiveCardSelectChoiceActionHandler } from "./adaptiveCards/act
 import { config } from "../config/config";
 import { techRepository } from "../config/db";
 
-import { rt as rtClient } from "../utils/client/rt/rt";
+import { rt as rtClient } from "../utils/client/rt/client";
 import { graphClient } from "../utils/client/graph";
 
 // Define the state store for your bot.
@@ -45,7 +45,7 @@ const tch = new TicketCommandHandler(rtClient);
 const tnxah = new TicketAdaptiveCardNextActionHandler(rtClient);
 const tpah = new TicketAdaptiveCardCreateActionHandler(config, rtClient, graphClient);
 const tnah = new TicketAdaptiveCardCancelActionHandler();
-const tscah = new TicketAdaptiveCardSelectChoiceActionHandler(); //rtClient
+const tscah = new TicketAdaptiveCardSelectChoiceActionHandler(rtClient);
 
 const contextFactory: HandlerTurnContextFactory = new DefaultHandlerTurnContextFactory(
     dialogManager,

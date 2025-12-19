@@ -6,10 +6,15 @@ import { HandlerTriggerData } from "../manager";
 import { OAuthCommandHandler } from "../handler";
 import { HandlerMessage } from "../message";
 import { AdaptiveCardTicketCardPageData } from "../../adaptiveCards/actions/actions";
-import { RTClient } from "../../../utils/client/rt/rt";
-import { Queue } from "../../../utils/client/rt/schemas";
+import { RTClient } from "../../../utils/client/rt/client";
+import { Queue } from "../../../utils/client/rt/schemas/queues";
 
 import page0 from "../../adaptiveCards/templates/ticket/page0.json";
+
+interface QueueChoice {
+    title: string;
+    value: string;
+}
 
 export class TicketCommandHandler extends OAuthCommandHandler {
     private readonly Empty: string = " ";
@@ -128,14 +133,25 @@ export class TicketCommandHandler extends OAuthCommandHandler {
         ];
     }
 
-    private async _fetchQueueChoices(): Promise<{ title: string; value: string }[]> {
+    private async _fetchQueueChoices(): Promise<QueueChoice[]> {
         // Queue choices array containing the title and value of each queue to be displayed in the adaptive card
-        const queueChoices: { title: string; value: string }[] = [];
+        const queueChoices: QueueChoice[] = [];
+        const queuesToChoices = (queues: Queue[]): QueueChoice[] => {
+            return queues
+                .map((queue: Queue) => {
+                    if (queue?.id && queue?.Name) {
+                        return { title: queue.Name, value: queue.id };
+                    }
+                    return null;
+                })
+                .filter((v) => v !== null);
+        };
 
-        let queues = await this._rt.queues.request.get();
-        queues.items.forEach((queue: Queue) => {
-            if (queue?.id && queue?.Name) {
-                queueChoices.push({ title: queue.Name, value: queue.id });
+        await this._rt.queues.request.get().then(async (response) => {
+            queueChoices.push(...queuesToChoices(response.items));
+            while (response?.next_page) {
+                response = await response.next().request.get();
+                queueChoices.push(...queuesToChoices(response.items));
             }
         });
 
@@ -154,42 +170,41 @@ export class TicketCommandHandler extends OAuthCommandHandler {
         //     }
         // }
 
-        while (queues?.next_page) {
-            // if (queues.page === undefined || queues.page === null || isNaN(queues.page)) {
-            //     break;
-            // }
-            // const page: number = queues.page + 1;
+        // while (queues?.next_page) {
+        // if (queues.page === undefined || queues.page === null || isNaN(queues.page)) {
+        //     break;
+        // }
+        // const page: number = queues.page + 1;
 
-            queues = (await queues
-                .next()
-                .request.get()
-                .catch((error: any) => {
-                    console.error(error);
-                    return null;
-                }))!;
+        // queues = (await queues
+        //     .next()
+        //     .request.get()
+        //     .catch((error: any) => {
+        //         console.error(error);
+        //         return null;
+        //     }))!;
 
-            if (!queues) {
-                break;
-            }
+        // if (!queues) {
+        //     break;
+        // }
 
-            for (const queueRef of queues?.items ?? []) {
-                const queue: Queue | null = queueRef.id
-                    ? await this._rt.queues
-                          .id(queueRef.id)
-                          .request.get()
-                          .catch((error: any) => {
-                              console.error(error);
-                              return null;
-                          })
-                    : null;
-                if (queue?.id && queue?.Name) {
-                    queueChoices.push({ title: queue.Name, value: queue.id });
-                }
-            }
-        }
+        //     for (const queueRef of queues?.items ?? []) {
+        //         const queue: Queue | null = queueRef.id
+        //             ? await this._rt.queues
+        //                   .id(queueRef.id)
+        //                   .request.get()
+        //                   .catch((error: any) => {
+        //                       console.error(error);
+        //                       return null;
+        //                   })
+        //             : null;
+        //         if (queue?.id && queue?.Name) {
+        //             queueChoices.push({ title: queue.Name, value: queue.id });
+        //         }
+        //     }
+        // }
 
         console.debug(`queueChoices:`, queueChoices);
-
-        return queueChoices.length > 0 ? queueChoices : [];
+        return queueChoices?.length > 0 ? queueChoices : [];
     }
 }

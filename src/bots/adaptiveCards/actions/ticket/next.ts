@@ -9,9 +9,9 @@ import {
     AdaptiveCardActionPositiveTicketPageData,
     AdaptiveCardTicketCardPageData,
 } from "../actions";
-import { CustomField } from "../../../../utils/client/rt/schemas";
 import { isKeyOf } from "../../../../utils/misc";
-import { RTClient } from "../../../../utils/client/rt/rt";
+import { RTClient } from "../../../../utils/client/rt/client";
+import { CustomField } from "../../../../utils/client/rt/schemas/customFields";
 
 import page1 from "../../templates/ticket/page1.json";
 import customFieldSelect from "../../templates/ticket/customFieldSelect.json";

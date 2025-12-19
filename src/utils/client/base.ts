@@ -1,5 +1,5 @@
-import z, { ZodSchema, ZodType, ZodTypeAny } from "zod";
-import { HttpContentTypes, HttpHeaders, HttpMethods } from "../http";
+import { ZodType, ZodTypeAny } from "zod";
+import { HttpContentTypes, HttpHeaders, HttpMethod } from "../http";
 
 export interface Client {
     api(endpoint: string): ClientRequest;
@@ -11,7 +11,7 @@ class DefaultClient implements Client {
     constructor(
         endpoint: string,
         basePath: string,
-        private readonly _authProvider: () => Promise<{ headerName: string; value: string }>
+        private readonly _authProvider?: () => Promise<{ headerName: string; value: string }>
     ) {
         this._endpoint = `${endpoint}${endpoint.endsWith("/") ? "" : "/"}${
             basePath.startsWith("/") ? basePath.slice(1) : basePath
@@ -30,7 +30,7 @@ class DefaultClient implements Client {
 export function createClient(
     endpoint: string,
     basePath: string,
-    authProvider: () => Promise<{ headerName: string; value: string }>
+    authProvider?: () => Promise<{ headerName: string; value: string }>
 ): Client {
     return new DefaultClient(endpoint, basePath, authProvider);
 }
@@ -47,12 +47,16 @@ export type QueryParams = Record<string, QueryParam>;
 
 export interface ClientRequest {
     get<GetResponse>(): Promise<GetResponse>;
+    get<GetResponse>(content?: unknown): Promise<GetResponse>;
 
-    post<PostResponse>(content: unknown): Promise<PostResponse>;
+    post<PostResponse>(): Promise<PostResponse>;
+    post<PostResponse>(content?: unknown): Promise<PostResponse>;
 
-    put<PutResponse>(content: unknown): Promise<PutResponse>;
+    put<PutResponse>(): Promise<PutResponse>;
+    put<PutResponse>(content?: unknown): Promise<PutResponse>;
 
     delete<DeleteResponse>(): Promise<DeleteResponse>;
+    delete<DeleteResponse>(content?: unknown): Promise<DeleteResponse>;
 
     queryParam(name: string, value: QueryParam): this;
 
@@ -70,13 +74,13 @@ export interface ClientRequest {
 class DefaultClientRequest implements ClientRequest {
     public static create(
         path: string,
-        authProvider: () => Promise<{ headerName: string; value: string }>
+        authProvider?: () => Promise<{ headerName: string; value: string }>
     ): ClientRequest {
         return new DefaultClientRequest(authProvider, path);
     }
 
     private constructor(
-        private readonly _authProvider: () => Promise<{ headerName: string; value: string }>,
+        private readonly _authProvider?: () => Promise<{ headerName: string; value: string }>,
         private _path: string = "",
         private readonly _queryParams: QueryParams = {},
         private readonly _headers: Headers = {},
@@ -106,17 +110,24 @@ class DefaultClientRequest implements ClientRequest {
     }
 
     private async _request(
-        method: HttpMethods,
+        method: HttpMethod,
         options?: { body?: unknown; headers?: Headers; queryParams?: QueryParams }
     ): Promise<any> {
-        const auth = await this._authProvider();
-        return fetch(this._url(options?.queryParams ?? {}), {
-            method: method,
-            headers: {
-                Accept: HttpContentTypes.Json,
-                ...this._toHeaders(options?.headers ?? {}),
+        let headers = {
+            Accept: HttpContentTypes.Json,
+            ...this._toHeaders(options?.headers ?? {}),
+        };
+        const auth = await this._authProvider?.();
+        if (auth && auth.headerName && auth.value) {
+            headers = {
+                ...headers,
                 [auth.headerName]: auth.value,
-            },
+            };
+        }
+
+        return fetch(this._url(options?.queryParams ?? {}), {
+            method: method.toUpperCase(),
+            headers: headers,
             body: options?.body ? JSON.stringify(options?.body) : this._body ? JSON.stringify(this._body) : undefined,
         }).then((response: Response): Promise<any> => {
             if (!response.ok) {
@@ -126,8 +137,10 @@ class DefaultClientRequest implements ClientRequest {
         });
     }
 
-    public async get<GetResponse>(): Promise<GetResponse> {
-        return this._request(HttpMethods.Get, {
+    public async get<GetResponse>(): Promise<GetResponse>;
+    public async get<GetResponse>(content?: unknown): Promise<GetResponse> {
+        return this._request(HttpMethod.Get, {
+            body: content,
             headers: {
                 ...this._headers,
             },
@@ -135,8 +148,9 @@ class DefaultClientRequest implements ClientRequest {
         });
     }
 
+    public async post<PostResponse>(): Promise<PostResponse>;
     public async post<PostResponse>(content?: unknown): Promise<PostResponse> {
-        return this._request(HttpMethods.Post, {
+        return this._request(HttpMethod.Post, {
             body: content,
             headers: {
                 [HttpHeaders.ContentType]: HttpContentTypes.Json,
@@ -146,8 +160,9 @@ class DefaultClientRequest implements ClientRequest {
         });
     }
 
-    public async put<PutResponse>(content: unknown): Promise<PutResponse> {
-        return this._request(HttpMethods.Put, {
+    public async put<PutResponse>(): Promise<PutResponse>;
+    public async put<PutResponse>(content?: unknown): Promise<PutResponse> {
+        return this._request(HttpMethod.Put, {
             body: content,
             headers: {
                 [HttpHeaders.ContentType]: HttpContentTypes.Json,
@@ -157,8 +172,10 @@ class DefaultClientRequest implements ClientRequest {
         });
     }
 
-    public async delete<DeleteResponse>(): Promise<DeleteResponse> {
-        return this._request(HttpMethods.Delete, {
+    public async delete<DeleteResponse>(): Promise<DeleteResponse>;
+    public async delete<DeleteResponse>(content?: unknown): Promise<DeleteResponse> {
+        return this._request(HttpMethod.Delete, {
+            body: content,
             headers: {
                 ...this._headers,
             },
@@ -257,240 +274,362 @@ export abstract class BaseConfigurableSchemaClientRequest implements Configurabl
 }
 
 /**
- * Base interface for schema configurations used in schema-based client requests.
+ * Base interface for endpoint configurations used in schema-based client requests.
  *
  * @public
  */
-export interface SchemaConfig {
+export interface EndpointConfig {
     /**
      * The path of the resource relative to the base URL.
      */
     path?: string;
 }
 
-/**
- * Configuration interface for schema-based client requests, defining Zod schemas for request and response bodies for various HTTP methods.
- *
- * Each property corresponds to a specific HTTP method and endpoint, and indicates the expected schema for that method's request or response body,
- * these schemas are used to validate and type the data sent and received by the client requests. If a property is omitted, it indicates that the
- * corresponding HTTP method is not supported for that resource.
- *
- * @example
- * ```typescript
- * const userSchema = z.object({
- *   id: z.string().uuid(),
- *   name: z.string().min(1),
- *   email: z.string().email(),
- * });
- *
- * const userRequestConfig = {
- *   path: "/user",
- *   getResponse: userSchema,
- *   postRequest: userSchema.omit({ id: true }),
- *   postResponse: userSchema,
- * };
- * ```
- *
- * @public
- */
-export interface SchemaClientRequestConfig extends SchemaConfig {
-    getResponse?: ZodTypeAny;
+type ResponseMethodConfig<Response = any> = {
+    response: ZodType<Response>;
+};
 
-    postRequest?: ZodTypeAny;
+type BodyMethodConfig<Request = any, Response = any> = {
+    request: ZodType<Request>;
+    response: ZodType<Response>;
+};
 
-    postResponse?: ZodTypeAny;
+export type MethodConfig<Request = any, Response = any> =
+    | BodyMethodConfig<Request, Response>
+    | ResponseMethodConfig<Response>;
 
-    putRequest?: ZodTypeAny;
+export interface SchemaEndpointConfig<Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {}>
+    extends EndpointConfig {
+    methods?: Methods;
+}
 
-    putResponse?: ZodTypeAny;
+// export interface SchemaClientRequestConfig extends SchemaConfig {
+//     getResponse?: ZodTypeAny;
 
-    deleteResponse?: ZodTypeAny;
+//     postRequest?: ZodTypeAny;
+
+//     postResponse?: ZodTypeAny;
+
+//     putRequest?: ZodTypeAny;
+
+//     putResponse?: ZodTypeAny;
+
+//     deleteResponse?: ZodTypeAny;
+// }
+
+export function createSchemaEndpointConfig<
+    const Config extends SchemaEndpointConfig<Methods>,
+    Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {}
+>(config: Config): Config {
+    return config;
 }
 
 /**
  * Utility type that infers the type from a Zod schema or returns `undefined` if the schema is not provided.
  */
-type SchemaOrUndefined<T> = T extends ZodType<any> ? z.infer<T> : undefined;
+// type SchemaOrUndefined<T> = T extends ZodType<any> ? z.infer<T> : undefined;
 
-/**
- * Utility type that infers the types for various HTTP methods' request and response bodies from a {@link SchemaClientRequestConfig} object.
- * This type maps each property of the configuration to its corresponding inferred type, or `undefined` if the schema is not provided.
- *
- * @example
- * ```typescript
- * const userSchema = z.object({
- *  id: z.string().uuid(),
- *  name: z.string().min(1),
- * email: z.string().email(),
- * });
- *
- * const userRequestConfig: ClientRequestSchemaConfig = {
- *  getResponse: userSchema,
- *  postRequest: userSchema.omit({ id: true }),
- *  postResponse: userSchema,
- * };
- *
- * // The inferred types would be:
- * type InferredTypes = InferFromConfig<typeof userRequestConfig>;
- * // {
- * //   GetResponse: { id: string; name: string; email: string; };
- * //   PostRequest: { name: string; email: string; };
- * //   PostResponse: { id: string; name: string; email: string; };
- * //   PutRequest: undefined;
- * //   PutResponse: undefined;
- * //   DeleteResponse: undefined;
- * // }
- * ```
- *
- * @public
- */
-export type InferFromConfig<C extends SchemaClientRequestConfig> = {
-    /**
-     * The schema for the `GET` response.
-     */
-    GetResponse: SchemaOrUndefined<C["getResponse"]>;
+// export type InferFromConfig<C extends SchemaClientRequestConfig> = {
+//     /**
+//      * The schema for the `GET` response.
+//      */
+//     GetResponse: SchemaOrUndefined<C["getResponse"]>;
 
-    /**
-     * The schema for the `POST` request.
-     */
-    PostRequest: SchemaOrUndefined<C["postRequest"]>;
+//     /**
+//      * The schema for the `POST` request.
+//      */
+//     PostRequest: SchemaOrUndefined<C["postRequest"]>;
 
-    /**
-     * The schema for the `POST` response.
-     */
-    PostResponse: SchemaOrUndefined<C["postResponse"]>;
+//     /**
+//      * The schema for the `POST` response.
+//      */
+//     PostResponse: SchemaOrUndefined<C["postResponse"]>;
 
-    /**
-     * The schema for the `PUT` request.
-     */
-    PutRequest: SchemaOrUndefined<C["putRequest"]>;
+//     /**
+//      * The schema for the `PUT` request.
+//      */
+//     PutRequest: SchemaOrUndefined<C["putRequest"]>;
 
-    /**
-     * The schema for the `PUT` response.
-     */
-    PutResponse: SchemaOrUndefined<C["putResponse"]>;
+//     /**
+//      * The schema for the `PUT` response.
+//      */
+//     PutResponse: SchemaOrUndefined<C["putResponse"]>;
 
-    /**
-     * The schema for the `DELETE` response.
-     */
-    DeleteResponse: SchemaOrUndefined<C["deleteResponse"]>;
+//     /**
+//      * The schema for the `DELETE` response.
+//      */
+//     DeleteResponse: SchemaOrUndefined<C["deleteResponse"]>;
+// };
+
+export type InferFromConfig<Config extends SchemaEndpointConfig> = Config extends {
+    methods: infer Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>>;
+}
+    ? {
+          [K in keyof Methods]: {
+              Request: Methods[K] extends BodyMethodConfig<infer Request, any> ? Request : undefined;
+              Response: Methods[K] extends BodyMethodConfig<any, infer Response> | ResponseMethodConfig<infer Response>
+                  ? Response
+                  : undefined;
+          };
+      }
+    : {};
+
+// export type SchemaClientRequest<Config extends SchemaClientRequestConfig> = ConfigurableSchemaClientRequest &
+//     (InferFromConfig<Config>["GetResponse"] extends undefined
+//         ? {}
+//         : {
+//               get: () => Promise<InferFromConfig<Config>["GetResponse"]>;
+//           }) &
+//     (InferFromConfig<Config>["PostResponse"] extends undefined
+//         ? {}
+//         : {
+//               post: (
+//                   content: InferFromConfig<Config>["PostRequest"]
+//               ) => Promise<InferFromConfig<Config>["PostResponse"]>;
+//           }) &
+//     (InferFromConfig<Config>["PutResponse"] extends undefined
+//         ? {}
+//         : {
+//               put: (content: InferFromConfig<Config>["PutRequest"]) => Promise<InferFromConfig<Config>["PutResponse"]>;
+//           }) &
+//     (InferFromConfig<Config>["DeleteResponse"] extends undefined
+//         ? {}
+//         : {
+//               delete: () => Promise<InferFromConfig<Config>["DeleteResponse"]>;
+//           });
+
+export type SchemaClientRequest<Config extends SchemaEndpointConfig> = ConfigurableSchemaClientRequest & {
+    [Method in keyof InferFromConfig<Config>]: InferFromConfig<Config>[Method] extends {
+        Request: infer Request;
+        Response: infer Response;
+    }
+        ? Request extends undefined
+            ? Response extends undefined
+                ? never
+                : () => Promise<Response>
+            : Response extends undefined
+            ? (content: Request) => Promise<void>
+            : (content: Request) => Promise<Response>
+        : never;
 };
 
-export type SchemaClientRequest<Config extends SchemaClientRequestConfig> = ConfigurableSchemaClientRequest &
-    (InferFromConfig<Config>["GetResponse"] extends undefined
-        ? {}
-        : {
-              get: () => Promise<InferFromConfig<Config>["GetResponse"]>;
-          }) &
-    (InferFromConfig<Config>["PostResponse"] extends undefined
-        ? {}
-        : {
-              post: (
-                  content: InferFromConfig<Config>["PostRequest"]
-              ) => Promise<InferFromConfig<Config>["PostResponse"]>;
-          }) &
-    (InferFromConfig<Config>["PutResponse"] extends undefined
-        ? {}
-        : {
-              put: (content: InferFromConfig<Config>["PutRequest"]) => Promise<InferFromConfig<Config>["PutResponse"]>;
-          }) &
-    (InferFromConfig<Config>["DeleteResponse"] extends undefined
-        ? {}
-        : {
-              delete: () => Promise<InferFromConfig<Config>["DeleteResponse"]>;
-          });
+type MethodType<Config extends SchemaEndpointConfig, Method extends HttpMethod> = InferFromConfig<Config> extends {
+    [Method in HttpMethod]?: {
+        Request: any;
+        Response: any;
+    };
+}
+    ? InferFromConfig<Config>[Method]
+    : never;
 
-export type BeforeCallbacks<Config extends SchemaClientRequestConfig> = {
-    get?: () => Promise<void>;
+export type MethodRequestType<Config extends SchemaEndpointConfig, Method extends HttpMethod> = MethodType<
+    Config,
+    Method
+> extends { Request: infer Request }
+    ? Request
+    : never;
 
-    post?: (content: InferFromConfig<Config>["PostRequest"]) => Promise<InferFromConfig<Config>["PostRequest"]>;
+export type MethodResponseType<Config extends SchemaEndpointConfig, Method extends HttpMethod> = MethodType<
+    Config,
+    Method
+> extends { Response: infer Response }
+    ? Response
+    : never;
 
-    put?: (content: InferFromConfig<Config>["PutRequest"]) => Promise<InferFromConfig<Config>["PutRequest"]>;
+export type BeforeCallbacks<Config extends SchemaEndpointConfig> = Partial<{
+    [Method in keyof InferFromConfig<Config>]: InferFromConfig<Config>[Method] extends {
+        Request: infer Request;
+    }
+        ? Request extends undefined
+            ? () => Promise<void>
+            : (content: Request) => Promise<Request>
+        : never;
+}>;
 
-    delete?: () => Promise<void>;
+export type AfterCallbacks<Config extends SchemaEndpointConfig> = Partial<{
+    [Method in keyof InferFromConfig<Config>]?: InferFromConfig<Config>[Method] extends {
+        Response: infer Response;
+    }
+        ? Response extends undefined
+            ? (response: unknown) => Promise<void>
+            : (response: unknown) => Promise<Response>
+        : never;
+}>;
+
+export type Callbacks<Config extends SchemaEndpointConfig> = {
+    before?: BeforeCallbacks<Config>;
+
+    after?: AfterCallbacks<Config>;
 };
 
-export type AfterCallbacks<Config extends SchemaClientRequestConfig> = {
-    get?: (response: unknown) => Promise<InferFromConfig<Config>["GetResponse"]>;
-
-    post?: (response: unknown) => Promise<InferFromConfig<Config>["PostResponse"]>;
-
-    put?: (response: unknown) => Promise<InferFromConfig<Config>["PutResponse"]>;
-
-    delete?: (response: unknown) => Promise<InferFromConfig<Config>["DeleteResponse"]>;
-};
-
-export type Callbacks<C extends SchemaClientRequestConfig> = {
-    before?: BeforeCallbacks<C>;
-
-    after?: AfterCallbacks<C>;
-};
-
-class DefaultSchemaClientRequest<C extends SchemaClientRequestConfig> extends BaseConfigurableSchemaClientRequest {
-    public static create<C extends SchemaClientRequestConfig>(
+class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends BaseConfigurableSchemaClientRequest {
+    public static create<Config extends SchemaEndpointConfig>(
         request: ClientRequest,
-        config: C,
-        callbacks?: Callbacks<C>
-    ): SchemaClientRequest<C> {
-        return new DefaultSchemaClientRequest<C>(request, config, callbacks);
+        config: Config,
+        callbacks?: Callbacks<Config>
+    ): SchemaClientRequest<Config> {
+        const base = new DefaultSchemaClientRequest<Config>(request, config, callbacks);
+
+        return new Proxy(base, {
+            get(target: DefaultSchemaClientRequest<Config>, propertyName: string | symbol, receiver: any): any {
+                if (
+                    typeof propertyName === "string" &&
+                    (Object.values(HttpMethod).includes(propertyName as HttpMethod) || propertyName in HttpMethod) &&
+                    base._supportsMethod(propertyName as HttpMethod)
+                ) {
+                    // const keyName = propertyName as keyof HttpMethod;
+                    // return base.method.bind(base);
+
+                    const method: HttpMethod | undefined = Object.entries(HttpMethod).find(
+                        (value: [string, HttpMethod], _index: number, _array: [string, HttpMethod][]) => {
+                            return value[0] === propertyName || value[1] === propertyName;
+                        }
+                    )?.[1];
+
+                    return (content: any) => {
+                        return base.method(content, method as HttpMethod & keyof InferFromConfig<Config>);
+                    };
+                }
+                const value = Reflect.get(target, propertyName, receiver);
+                if (typeof value === "function") {
+                    return value.bind(target);
+                }
+                return value;
+            },
+        }) as SchemaClientRequest<Config>;
     }
 
     private constructor(
         request: ClientRequest,
-        private readonly _config: C,
-        private readonly _callbacks?: Callbacks<C>
+        private readonly _config: Config,
+        private readonly _callbacks?: Callbacks<Config>
     ) {
         super(request);
     }
 
-    public async get(): Promise<InferFromConfig<C>["GetResponse"]> {
-        if (!this._config.getResponse) {
-            throw new Error("Resource does not support 'GET'");
-        }
-        await this._callbacks?.before?.get?.();
-        let response = await this.request.get();
-        response = this._callbacks?.after?.get ? await this._callbacks.after.get(response) : response;
-        return this._config.getResponse.parse(response);
+    private _supportsMethod(method: HttpMethod): boolean {
+        return !!this._config?.methods && method in this._config.methods;
     }
 
-    public async post(content: InferFromConfig<C>["PostRequest"]): Promise<InferFromConfig<C>["PostResponse"]> {
-        if (!this._config.postRequest || !this._config.postResponse) {
-            throw new Error("Resource does not support 'POST'");
+    private _schemaForMethod(method: HttpMethod, schema: "request" | "response"): ZodTypeAny | undefined {
+        if (!this._supportsMethod(method)) {
+            return undefined;
         }
-        content = this._callbacks?.before?.post ? await this._callbacks.before.post(content) : content;
-        const validatedContent = this._config.postRequest?.parse(content);
-        let response = await this.request.post(validatedContent);
-        response = this._callbacks?.after?.post ? await this._callbacks.after.post(response) : response;
-        return this._config.postResponse.parse(response);
+
+        const methods: {
+            [method]: Partial<Record<"request" | "response", ZodTypeAny>>;
+        } = this._config.methods ?? {};
+
+        if (schema in methods[method]) {
+            return methods[method][schema] as ZodType;
+        }
+
+        return undefined;
     }
 
-    public async put(content: InferFromConfig<C>["PutRequest"]): Promise<InferFromConfig<C>["PutResponse"]> {
-        if (!this._config.putRequest || !this._config.putResponse) {
-            throw new Error("Resource does not support 'PUT'");
+    public async method<Method extends HttpMethod & keyof InferFromConfig<Config>>(
+        content: MethodRequestType<Config, Method>,
+        method: Method
+    ): Promise<MethodResponseType<Config, Method>> {
+        if (!this._supportsMethod(method)) {
+            throw new Error(`Resource does not support method '${method}'`);
         }
-        content = this._callbacks?.before?.put ? await this._callbacks.before.put(content) : content;
-        const validatedContent = this._config.putRequest?.parse(content);
-        let response = await this.request.put(validatedContent);
-        response = this._callbacks?.after?.put ? await this._callbacks.after.put(response) : response;
-        return this._config.putResponse.parse(response);
+
+        const requestSchema = this._schemaForMethod(method, "request");
+        const hasRequestSchema = !!requestSchema && requestSchema instanceof ZodType;
+        if (!hasRequestSchema && content) {
+            console.warn(
+                `No request schema defined for method '${method}', but content was provided. It will be ignored.`
+            );
+        }
+
+        content = (
+            this._callbacks?.before?.[method] ? await this._callbacks.before[method](content) : content
+        ) as MethodRequestType<Config, Method>;
+        const validatedContent = hasRequestSchema ? requestSchema.parse(content) : undefined;
+
+        if (!(method in this.request)) {
+            throw new Error(`Method '${method}' is not implemented in the underlying 'ClientRequest'.`);
+        }
+        const requestKey = method as keyof ClientRequest;
+        if (typeof this.request[requestKey] !== "function") {
+            throw new Error(`Method '${method}' is not a function in the underlying 'ClientRequest'.`);
+        }
+        const requestMethod = this.request[requestKey] as Function;
+
+        let response = undefined;
+        if (hasRequestSchema) {
+            response = await requestMethod.call(this.request, validatedContent);
+        } else {
+            response = await requestMethod.call(this.request);
+        }
+        response = this._callbacks?.after?.[method] ? await this._callbacks.after[method](response) : response;
+
+        const responseSchema = this._schemaForMethod(method, "response");
+        const hasResponseSchema = !!responseSchema && responseSchema instanceof ZodType;
+        if (!hasResponseSchema && response) {
+            console.warn(
+                `No response schema defined for method '${method}', but response was received. It will be ignored.`
+            );
+        }
+        if (!hasResponseSchema) {
+            return undefined as MethodResponseType<Config, Method>;
+        }
+        return responseSchema.parse(response);
     }
 
-    public async delete(): Promise<InferFromConfig<C>["DeleteResponse"]> {
-        if (!this._config.deleteResponse) {
-            throw new Error("Resource does not support 'DELETE'");
-        }
-        await this._callbacks?.before?.delete?.();
-        let response = await this.request.delete();
-        response = this._callbacks?.after?.delete ? await this._callbacks.after.delete(response) : response;
-        return this._config.deleteResponse.parse(response);
-    }
+    // public async get(): Promise<MethodResponseType<Config, HttpMethod.Get>> {
+    //     if (!this._supportsMethod(HttpMethod.Get)) {
+    //         throw new Error(`Resource does not support method '${HttpMethod.Get}'`);
+    //     }
+    //     await this._callbacks?.before?.get?.();
+    //     let response = await this.request.get();
+    //     response = this._callbacks?.after?.get ? await this._callbacks.after.get(response) : response;
+    //     return this._schemaForMethod(HttpMethod.Get, "response")?.parse(response);
+    // }
+
+    // public async post(
+    //     content: MethodRequestType<Config, HttpMethod.Post>
+    // ): Promise<MethodResponseType<Config, HttpMethod.Post>> {
+    //     if (!this._supportsMethod(HttpMethod.Post)) {
+    //         throw new Error(`Resource does not support method '${HttpMethod.Post}'`);
+    //     }
+    //     content = this._callbacks?.before?.post ? await this._callbacks.before.post(content) : content;
+    //     const validatedContent = this._schemaForMethod(HttpMethod.Post, "request")?.parse(content);
+    //     let response = await this.request.post(validatedContent);
+    //     response = this._callbacks?.after?.post ? await this._callbacks.after.post(response) : response;
+    //     return this._schemaForMethod(HttpMethod.Post, "response")?.parse(response);
+    // }
+
+    // public async put(
+    //     content: MethodRequestType<Config, HttpMethod.Put>
+    // ): Promise<MethodResponseType<Config, HttpMethod.Put>> {
+    //     if (!this._supportsMethod(HttpMethod.Put)) {
+    //         throw new Error(`Resource does not support method '${HttpMethod.Put}'`);
+    //     }
+    //     content = this._callbacks?.before?.put ? await this._callbacks.before.put(content) : content;
+    //     const validatedContent = this._schemaForMethod(HttpMethod.Put, "request")?.parse(content);
+    //     let response = await this.request.put(validatedContent);
+    //     response = this._callbacks?.after?.put ? await this._callbacks.after.put(response) : response;
+    //     return this._schemaForMethod(HttpMethod.Put, "response")?.parse(response);
+    // }
+
+    // public async delete(): Promise<MethodResponseType<Config, HttpMethod.Delete>> {
+    //     if (!this._supportsMethod(HttpMethod.Delete)) {
+    //         throw new Error(`Resource does not support method '${HttpMethod.Delete}'`);
+    //     }
+    //     await this._callbacks?.before?.delete?.();
+    //     let response = await this.request.delete();
+    //     response = this._callbacks?.after?.delete ? await this._callbacks.after.delete(response) : response;
+    //     return this._schemaForMethod(HttpMethod.Delete, "response")?.parse(response);
+    // }
 }
 
-export function createSchemaClientRequest<C extends SchemaClientRequestConfig>(
+function createSchemaClientRequest<Config extends SchemaEndpointConfig>(
     request: ClientRequest,
-    config: C,
-    callbacks?: Callbacks<C>
-): SchemaClientRequest<C> {
+    config: Config,
+    callbacks?: Callbacks<Config>
+): SchemaClientRequest<Config> {
     if (!request) {
         throw new Error("Argument 'request' must be a valid 'ClientRequest' instance.");
     }
@@ -498,64 +637,77 @@ export function createSchemaClientRequest<C extends SchemaClientRequestConfig>(
         throw new Error("Argument 'config' must be a valid 'SchemaConfig' instance.");
     }
 
-    const base = DefaultSchemaClientRequest.create<C>(request, config, callbacks);
-    const isEnabled: Record<"get" | "post" | "put" | "delete", boolean> = {
-        get: !!config.getResponse,
-        post: !!(config.postRequest && config.postResponse),
-        put: !!(config.putRequest && config.putResponse),
-        delete: !!config.deleteResponse,
-    };
+    // const base =
+    return DefaultSchemaClientRequest.create<Config>(request, config, callbacks);
+    // const isEnabled: Record<"get" | "post" | "put" | "delete", boolean> = {
+    //     get: !!config.getResponse,
+    //     post: !!(config.postRequest && config.postResponse),
+    //     put: !!(config.putRequest && config.putResponse),
+    //     delete: !!config.deleteResponse,
+    // };
 
     // Wrap in Proxy to intercept access to disabled methods
-    return new Proxy(base, {
-        get(target: DefaultSchemaClientRequest<C>, propertyName: string | symbol, receiver: any): any {
-            if (propertyName in base) {
-                let keyName = propertyName as keyof typeof isEnabled;
-                if (!isEnabled[keyName]) {
-                    throw new Error(`Attempting to access disabled property/method '${String(propertyName)}'`);
-                }
+    // return new Proxy(base, {
+    //     get(target: DefaultSchemaClientRequest<C>, propertyName: string | symbol, receiver: any): any {
+    //         if (propertyName in base) {
+    //             let keyName = propertyName as keyof typeof isEnabled;
+    //             if (!isEnabled[keyName]) {
+    //                 throw new Error(`Attempting to access disabled property/method '${String(propertyName)}'`);
+    //             }
 
-                const baseKeyName = keyName as typeof keyName & keyof typeof base;
-                const value = base[baseKeyName];
-                if (typeof value === "function") {
-                    return value.bind(base);
-                }
-                return value;
-            }
+    //             const baseKeyName = keyName as typeof keyName & keyof typeof base;
+    //             const value = base[baseKeyName];
+    //             if (typeof value === "function") {
+    //                 return value.bind(base);
+    //             }
+    //             return value;
+    //         }
 
-            const value = Reflect.get(target, propertyName, receiver);
-            if (typeof value === "function") {
-                return value.bind(target);
-            }
-            return value;
-        },
-    }) as SchemaClientRequest<C>;
+    //         const value = Reflect.get(target, propertyName, receiver);
+    //         if (typeof value === "function") {
+    //             return value.bind(target);
+    //         }
+    //         return value;
+    //     },
+    // }) as SchemaClientRequest<C>;
 }
 
-export interface PagedCollection<_T> {
-    // Intentionally left empty
-}
+// export interface PagedCollection<_T> {
+//     // Intentionally left empty
+// }
 
-export interface PagedSchemaClientRequestConfig<T extends PagedCollection<InferItemFromCollection<T>>>
-    extends SchemaConfig {
-    getResponse?: ZodSchema<T>;
-}
+// export interface PagedSchemaClientRequestConfig<Collection extends PagedCollection<InferItemFromCollection<Collection>>>
+//     extends SchemaConfig {
+//     methods: {
+//         get: ResponseMethodConfig<Collection>;
+//     };
+// }
 
-export type InferItemFromConfig<C extends PagedSchemaClientRequestConfig<any>> =
-    C extends PagedSchemaClientRequestConfig<infer _P extends PagedCollection<infer T>> ? T : never;
+// export type InferItemFromConfig<Config extends PagedSchemaClientRequestConfig<any>> =
+//     Config extends PagedSchemaClientRequestConfig<infer _P extends PagedCollection<infer T>> ? T : never;
 
-export type InferItemFromCollection<P extends PagedCollection<any>> = P extends PagedCollection<infer T> ? T : never;
+// export type InferItemFromCollection<Collection extends PagedCollection<any>> = Collection extends PagedCollection<
+//     infer Item
+// >
+//     ? Item
+//     : never;
 
-export type InferCollectionFromConfig<C extends PagedSchemaClientRequestConfig<any>> =
-    C extends PagedSchemaClientRequestConfig<infer P extends PagedCollection<any>> ? P : never;
+// export type InferCollectionFromConfig<Config extends PagedSchemaClientRequestConfig<any>> =
+//     Config extends PagedSchemaClientRequestConfig<infer Collection extends PagedCollection<any>> ? Collection : never;
 
-export type PagedSchemaClientRequest<C extends PagedSchemaClientRequestConfig<InferCollectionFromConfig<C>>> =
-    (InferFromConfig<C>["GetResponse"] extends undefined
-        ? {}
-        : {
-              get: () => Promise<InferCollectionFromConfig<C>>;
-          }) &
-        ConfigurableSchemaClientRequest;
+// export type PagedSchemaClientRequest<Config extends PagedSchemaClientRequestConfig<InferCollectionFromConfig<Config>>> =
+//     ConfigurableSchemaClientRequest &
+//         (MethodRequestType<Config, HttpMethod.Get> extends undefined
+//             ? MethodResponseType<Config, HttpMethod.Get> extends undefined
+//                 ? {}
+//                 : {
+//                       get: () => Promise<MethodResponseType<Config, HttpMethod.Get>>;
+//                   }
+//             : {
+//                   get: (
+//                       content: MethodRequestType<Config, HttpMethod.Get>
+//                   ) => Promise<MethodResponseType<Config, HttpMethod.Get>>;
+//               });
 
 // class DefaultPagedSchemaClientRequest<
 //     C extends PagedClientRequestSchemaConfig<InferCollectionFromConfig<C>>
@@ -628,22 +780,23 @@ export type PagedSchemaClientRequest<C extends PagedSchemaClientRequestConfig<In
 //     }) as PagedSchemaClientRequest<C>;
 // }
 
-export interface SchemaClientRequestBuilder<C extends SchemaClientRequestConfig> {
-    request: SchemaClientRequest<C>;
+export interface SchemaEndpointConfigurer<Config extends SchemaEndpointConfig> {
+    request: SchemaClientRequest<Config>;
 }
 
-export interface PagedSchemaClientRequestBuilder<C extends PagedSchemaClientRequestConfig<InferCollectionFromConfig<C>>>
-    extends SchemaClientRequestBuilder<C> {
-    request: PagedSchemaClientRequest<C>;
-}
+// export interface PagedSchemaClientRequestBuilder<
+//     C extends PagedSchemaClientRequestConfig<InferCollectionFromConfig<C>>
+// > {
+//     request: PagedSchemaClientRequest<C>;
+// }
 
-export abstract class BaseSchemaClientRequestBuilder<C extends SchemaClientRequestConfig>
-    implements SchemaClientRequestBuilder<C>
+export abstract class BaseSchemaEndpointConfigurer<Config extends SchemaEndpointConfig>
+    implements SchemaEndpointConfigurer<Config>
 {
     constructor(
         protected readonly client: Client,
-        protected readonly config: C,
-        private readonly _callbacks?: Callbacks<C>,
+        protected readonly config: Config,
+        protected readonly callbacks?: Callbacks<Config>,
         private readonly _variables: Record<string, string | number | boolean> = {}
     ) {
         if (!client) {
@@ -677,16 +830,16 @@ export abstract class BaseSchemaClientRequestBuilder<C extends SchemaClientReque
                 path = pathStr.replace(`{${key}}`, encodeURIComponent(String(value)));
             });
         } else {
-            throw new Error("Cannot build path: 'path' is not defined in the configuration.");
+            throw new Error("Property 'path' must be defined in the endpoint's schema configuration.");
         }
         return path;
     }
 
-    public get request(): SchemaClientRequest<C> {
+    public get request(): SchemaClientRequest<Config> {
         let path = this.path();
         if (!path) {
-            throw new Error("Cannot build request: computed path is invalid.");
+            throw new Error("Property 'path' could not be resolved for the endpoint.");
         }
-        return createSchemaClientRequest<C>(this.client.api(path), this.config, this._callbacks);
+        return createSchemaClientRequest<Config>(this.client.api(path), this.config, this.callbacks);
     }
 }

@@ -11,6 +11,7 @@
   "scripts": {
     "dev:teamsfx": "env-cmd --silent -f .localConfigs npm run start",
     "start": "node --inspect=9239 -r ts-node/register ./src/index.ts",
+    "start:dummy": "node --inspect=9239 -r ts-node/register ./src/utils/client/dummy/client.ts",
     "start:watch": "nodemon --verbose --watch ./src --exec \"npm run start --signal SIGINT\"",
     "start:build": "npm run build && node ./build/index.js",
     "start:ngrok": "ngrok http 3978 --host-header=\"localhost:3978\"",

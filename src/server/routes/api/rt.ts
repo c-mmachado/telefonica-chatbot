@@ -1,6 +1,6 @@
 import { Router, Response, Request, NextFunction } from "express";
 
-import { rt } from "../../../utils/client/rt/rt";
+import { rt } from "../../../utils/client/rt/client";
 
 export const router = Router();
 
