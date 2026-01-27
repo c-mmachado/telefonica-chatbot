@@ -9,7 +9,7 @@ router.get("/health", async (req: Request, res: Response, next: NextFunction): P
     console.debug(`req.headers:`, req.headers);
 
     try {
-        const response = await rt.rt.get();
+        const response = await rt.rt.request.get();
 
         // Return a 200 status code to indicate that the API connection was successful
         res.status(200).json({

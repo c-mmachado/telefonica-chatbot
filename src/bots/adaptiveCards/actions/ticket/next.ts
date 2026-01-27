@@ -82,7 +82,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
 
     private async _buildCustomFields(
         state: Record<string, any>,
-        actionData: AdaptiveCardActionPositiveTicketPageData
+        actionData: AdaptiveCardActionPositiveTicketPageData,
     ): Promise<any[]> {
         if (!actionData.ticketCategoryChoiceSet) {
             return [];
@@ -174,7 +174,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
                         .replace(/\${required}/g, String(field.id in freeCustomFields))
                         .replace(/\${sequenceId}/g, state.sequenceId)
                         .replace(/\${visible}/g, String(customFieldMap[field.id].visible))
-                        .replace(/<id>/g, field.id)
+                        .replace(/<id>/g, field.id),
                 );
             } else if (field.Type === "Freeform") {
                 return JSON.parse(
@@ -184,7 +184,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
                         .replace(/\${id}/g, customFieldMap[field.id].id)
                         .replace(/\${sequenceId}/g, state.sequenceId)
                         .replace(/\${visible}/g, String(customFieldMap[field.id].visible))
-                        .replace(/<id>/g, field.id)
+                        .replace(/<id>/g, field.id),
                 );
             }
         });

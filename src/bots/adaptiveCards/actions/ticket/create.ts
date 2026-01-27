@@ -27,7 +27,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
     constructor(
         private readonly _config: BotConfiguration,
         private readonly _rt: RTClient,
-        private readonly _graph: GraphClient // private readonly _logs: LogsRepository
+        private readonly _graph: GraphClient, // private readonly _logs: LogsRepository
     ) {}
 
     public async run(context: TurnContext, _handlerMessage: HandlerMessage): Promise<any> {
@@ -266,7 +266,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
 
         // Send a message to the user that the ticket was created and provide a link to the ticket
         await context.sendActivity(
-            `Se hay creado el ticket con el número: ${ticket.id}. Lo puedes acceder en [este enlace](${this._config.apiEndpoint}/Ticket/Display.html?id=${ticket.id}).`
+            `Se hay creado el ticket con el número: ${ticket.id}. Lo puedes acceder en [este enlace](${this._config.apiEndpoint}/Ticket/Display.html?id=${ticket.id}).`,
         );
     }
 }
