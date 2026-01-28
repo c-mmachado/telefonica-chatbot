@@ -21,13 +21,8 @@ export const createRTPagedCollectionSchema = <T extends z.ZodTypeAny>(itemSchema
         items: z.array(itemSchema),
         page: z.number().min(1),
         per_page: z.number().min(1),
-<<<<<<< Updated upstream
         total: z.number().min(0).nullable(),
         pages: z.number().min(1).nullable(),
-=======
-        total: z.number().min(0).optional(),
-        pages: z.number().min(1).optional(),
->>>>>>> Stashed changes
         count: z.number().min(0),
         next_page: z.string().url().optional(),
         prev_page: z.string().url().optional(),
