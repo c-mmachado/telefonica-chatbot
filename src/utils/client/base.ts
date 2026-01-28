@@ -839,6 +839,10 @@ export abstract class BaseSchemaEndpointConfigurer<
         // } else
         if (typeof path === "string") {
             const pathStr: string = path;
+
+            console.debug("Original path string:", pathStr);
+            console.debug("Resolving path with variables:", this._variables);
+
             Object.entries(this._variables).forEach(([key, value]: [string, string | number | boolean]): void => {
                 path = pathStr.replace(`{${key}}`, encodeURIComponent(String(value)));
             });
