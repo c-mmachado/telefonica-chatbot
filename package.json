@@ -1,6 +1,6 @@
 {
   "name": "ticket-bot",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "A Microsoft Teams bot designed to facilitate ticket creation in an external API. The bot collects information from conversations between customers and certified technicians within a shared Team, streamlining the process of generating and managing support tickets.",
   "author": "The Laude Technology Company",
   "license": "MIT",
