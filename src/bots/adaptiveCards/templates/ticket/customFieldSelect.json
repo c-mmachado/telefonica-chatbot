@@ -20,7 +20,7 @@
                         "verb": "selectChoiceTicket",
                         "data": {
                             "choice": "${id}",
-                            "sequenceId": "${sequenceId}"
+                            "requestId": "${requestId}"
                         }
                     }
                 }
