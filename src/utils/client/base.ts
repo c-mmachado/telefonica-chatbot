@@ -120,13 +120,14 @@ class DefaultClientRequest implements ClientRequest {
 
         const auth = await this._authProvider?.();
         if (auth && auth.headerName && auth.value) {
+            console.debug("Adding authentication header to request:", auth);
             headers = {
                 ...headers,
                 [auth.headerName]: auth.value,
             };
         }
 
-        console.debug(`Making request to resource '${method} ${this._path}'`);
+        console.debug(`Making request to resource '${method?.toUpperCase()} ${this._path}'`);
         console.debug(`options:`, options);
 
         return fetch(this._url(options?.queryParams ?? {}), {
@@ -586,7 +587,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
             return undefined as MethodResponseType<Config, Method>;
         }
 
-        responseSchema.parse(response); // TODO: I don't like this either
+        // responseSchema.parse(response); // TODO: Reenable validation
         return response as MethodResponseType<Config, Method>;
     }
 

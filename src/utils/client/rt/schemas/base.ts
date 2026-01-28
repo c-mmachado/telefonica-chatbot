@@ -23,7 +23,7 @@ export enum HyperlinkType {
 
 // Base types schemas
 export const hyperlinkSchema = z.object({
-    id: z.string().min(1).optional(),
+    id: z.string().min(1).optional(), // TODO: number or string -> string coercion
     name: z.string().min(1).optional(),
     type: z.nativeEnum(HyperlinkType).optional(),
     ref: z.nativeEnum(HyperlinkRef).optional(),

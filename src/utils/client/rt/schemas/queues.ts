@@ -24,7 +24,7 @@ import {
  * /queue/{id} endpoint schemas
  */
 export const queueSchema = z.object({
-    id: z.string().min(1),
+    id: z.string().min(1), // TODO: number or string -> string coercion
     Name: z.string().min(1),
     TicketCustomFields: typedHyperlinkSchema.array(),
     _hyperlinks: refHyperlinkSchema.array(),
@@ -124,8 +124,7 @@ export interface QueueIdEndpointConfigurer extends SchemaEndpointConfigurer<Queu
     ticketCustomFields: QueueTicketCustomFieldsEndpointConfigurer;
 }
 
-export interface QueueTicketCustomFieldsEndpointConfigurer
-    extends SchemaEndpointConfigurer<QueueTicketCustomFieldsConfig> {
+export interface QueueTicketCustomFieldsEndpointConfigurer extends SchemaEndpointConfigurer<QueueTicketCustomFieldsConfig> {
     id(customFieldId: string): CustomFieldIdEndpointConfigurer;
 }
 
@@ -178,7 +177,7 @@ class DefaultQueuesEndpointConfigurer
                         (ref) => !!(ref?.type === HyperlinkType.Queue && ref?.id),
                         async (ref) => {
                             return this.id(ref.id!).request.get();
-                        }
+                        },
                     );
                 },
                 // if (!response || typeof response !== "object") {
@@ -220,7 +219,10 @@ class DefaultQueueIdEndpointConfigurer
         return new DefaultQueueIdEndpointConfigurer(client, queueId);
     }
 
-    private constructor(client: Client, private readonly _queueId: string) {
+    private constructor(
+        client: Client,
+        private readonly _queueId: string,
+    ) {
         super(client, queueSchemaConfig);
         this.variable("id", this._queueId);
     }
@@ -270,7 +272,10 @@ class DefaultQueueTicketCustomFieldsEndpointConfigurer
         return new DefaultQueueTicketCustomFieldsEndpointConfigurer(client, queueId);
     }
 
-    private constructor(client: Client, private readonly _queueId: string) {
+    private constructor(
+        client: Client,
+        private readonly _queueId: string,
+    ) {
         super(client, queueTicketCustomFieldsSchemaConfig, {
             after: {
                 get: async (response: unknown): Promise<CustomField[]> => {
