@@ -29,6 +29,9 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
         const actionData: AdaptiveCardActionPositiveTicketPageData = activityValue?.action?.data;
         const state: Record<string, any> = (context as any).request().data;
 
+        console.debug(`actionData:`, actionData);
+        console.debug(`state:`, state);
+
         if (state.gui.page === 0) {
             // If the state is on page 0, we need to update the 'state.ticket' object with the data from the action
             for (const [key, field] of Object.entries<any>(state.ticket)) {
@@ -53,7 +56,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
 
             // Prepare the card data for the adaptive card
             const cardData: AdaptiveCardTicketCardPageData = {
-                requestId: state.requestId,
+                requestId: actionData.requestId,
                 gui: state.gui,
             };
 

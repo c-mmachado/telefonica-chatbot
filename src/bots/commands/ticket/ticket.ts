@@ -105,6 +105,7 @@ export class TicketCommandHandler extends OAuthCommandHandler {
                 },
             },
         };
+        (context as any).request().data = state;
 
         const cardData: AdaptiveCardTicketCardPageData = {
             requestId: requestId,
