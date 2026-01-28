@@ -21,7 +21,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
         const activityValue: AdaptiveCardActionActivityValue = context.activity.value;
         const actionData: AdaptiveCardActionSelectChoiceData = activityValue?.action?.data;
 
-        // Calidate that we can retrieve the state
+        // Validate that we can retrieve the state
         const state: Record<string, any> = (context as any).request().data;
         if (!state) {
             throw new Error("Ticket adaptive card state is not initialized");
@@ -127,7 +127,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
                         customFieldJson.items[1].items[0].value = "";
                         customFieldJson.items[1].items[0].placeholder = customFieldState.placeholder;
                         customFieldJson.items[1].items[0].choices = customFieldState.choices;
-                        // customFieldJson.isVisible = true;
+                        customFieldJson.isVisible = customFieldState?.choices?.length > 0;
                         customFieldJson.items[1].items[0].isRequired = true;
                         customFieldJson.items[1].items[0].isMultiSelect = false;
                     }
@@ -258,7 +258,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
                         customFieldJson.items[1].items[0].value = "";
                         customFieldJson.items[1].items[0].placeholder = customFieldState.placeholder;
                         customFieldJson.items[1].items[0].isRequired = choices.length > 0;
-                        // customFieldJson.isVisible = choices.length > 0;
+                        customFieldJson.isVisible = choices.length > 0;
                         customFieldJson.items[1].selectAction.isEnabled = choices.length > 0;
                         break;
                     }
