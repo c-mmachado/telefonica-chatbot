@@ -56,7 +56,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
 
         // Update the GUI properties of the card to reflect the state of the ticket creation
         const cardData: AdaptiveCardTicketCardPageData = {
-            requestId: state.requestId,
+            requestId: actionData.requestId,
             gui: state.gui,
         };
 
