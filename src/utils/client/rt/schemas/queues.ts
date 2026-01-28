@@ -287,7 +287,14 @@ class DefaultQueueTicketCustomFieldsEndpointConfigurer
                     for (const ref of refs) {
                         if (ref.ref === HyperlinkRef.CustomField && ref.id) {
                             // fields.push(await rt.customFields.id(ref.id).request.get());
-                            fields.push(await this.id(ref.id).request.get());
+                            try {
+                                fields.push(await this.id(ref.id).request.get());
+                            } catch (error: any) {
+                                console.warn(
+                                    `Failed to get custom field with id '${ref.id}' for queue '${this._queueId}':`,
+                                    error,
+                                );
+                            }
                         }
                     }
                     return Promise.resolve(fields);
