@@ -35,8 +35,8 @@ export class TicketCommandHandler extends OAuthCommandHandler {
     }
 
     private async _run(context: TurnContext, _message: HandlerMessage, _token?: string): Promise<void> {
-        const data: HandlerTriggerData = (context as any).trigger();
-        const state: Record<string, any> = (context as any).request().data || {};
+        const trigger: HandlerTriggerData = (context as any).trigger();
+        const data: Record<string, any> = (context as any).request().data || {};
         const requestId: string = (context as any).request().requestId;
 
         // Fetches the queue choices for the ticket
@@ -45,8 +45,8 @@ export class TicketCommandHandler extends OAuthCommandHandler {
         // Fetches the status choices for the ticket
         const statusChoices: { title: string; value: string }[] = await this._fetchStatusChoices();
 
-        // Creates a new ticket state in the handler state
-        state.ticket = {
+        // Creates a new ticket state in the request data
+        data.ticket = {
             startedAt: new Date(),
             ticketStateChoiceSet: {
                 value: "",
@@ -66,7 +66,7 @@ export class TicketCommandHandler extends OAuthCommandHandler {
         };
 
         // Creates the 'startedAt' containing the time this card was sent in the 'es-ES' locale format
-        const startedAt: string = state.ticket.startedAt.toLocaleString("es-ES", {
+        const startedAt: string = data.ticket.startedAt.toLocaleString("es-ES", {
             timeZone: "UTC",
             month: "long",
             day: "2-digit",
@@ -76,20 +76,20 @@ export class TicketCommandHandler extends OAuthCommandHandler {
             second: "2-digit",
         });
 
-        // Initializes the 'state.gui' object with the initial values for the adaptive card GUI state
-        state.gui = {
+        // Initializes the 'data.gui' object with the initial values for the adaptive card GUI state
+        data.gui = {
             page: 0,
             header: {
                 startedAt: startedAt,
                 from: {
-                    name: data?.replyFrom?.name ?? this.Empty,
-                    email: data?.replyFrom?.email ?? this.Empty,
+                    name: trigger?.replyFrom?.name ?? this.Empty,
+                    email: trigger?.replyFrom?.email ?? this.Empty,
                 },
             },
             context: {
-                team: data?.team?.name ?? this.Empty,
-                channel: data?.channel?.displayName ?? this.Empty,
-                conversation: data?.thread?.subject ?? this.Empty,
+                team: trigger?.team?.name ?? this.Empty,
+                channel: trigger?.channel?.displayName ?? this.Empty,
+                conversation: trigger?.thread?.subject ?? this.Empty,
             },
             buttons: {
                 visible: true,
@@ -105,18 +105,23 @@ export class TicketCommandHandler extends OAuthCommandHandler {
                 },
             },
         };
-        (context as any).request().data = state;
+        (context as any).request().data = data;
 
         const cardData: AdaptiveCardTicketCardPageData = {
             requestId: requestId,
-            ticket: state.ticket,
-            gui: state.gui,
+            ticket: data.ticket,
+            gui: data.gui,
         };
+
+        console.debug(`data:`, data);
+        console.debug(`cardData:`, cardData);
 
         // Expands the adaptive card template with the data provided
         const cardJson = new ACData.Template(page0).expand({
             $root: cardData,
         });
+
+        // console.debug(`cardJson:`, cardJson);
 
         // Sends the adaptive card
         await context.sendActivity(MessageFactory.attachment(CardFactory.adaptiveCard(cardJson)));

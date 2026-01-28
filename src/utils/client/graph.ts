@@ -113,7 +113,10 @@ class DefaultTeamRequestBuilder implements TeamRequestBuilder {
 
     public members: MembersRequestBuilder = new DefaultMembersRequestBuilder(this._client, this._teamId);
 
-    constructor(private readonly _client: Client, private _teamId: string) {}
+    constructor(
+        private readonly _client: Client,
+        private _teamId: string,
+    ) {}
 
     public id(teamId: string): TeamRequestBuilder {
         this._teamId = teamId;
@@ -126,7 +129,10 @@ class DefaultTeamRequestBuilder implements TeamRequestBuilder {
 }
 
 class DefaultMembersRequestBuilder implements MembersRequestBuilder {
-    constructor(private readonly _client: Client, private readonly _teamId: string) {}
+    constructor(
+        private readonly _client: Client,
+        private readonly _teamId: string,
+    ) {}
 
     public id(userId: string): MemberRequestBuilder {
         return new DefaultMemberRequestBuilder(this._client, this._teamId, userId);
@@ -138,7 +144,11 @@ class DefaultMembersRequestBuilder implements MembersRequestBuilder {
 }
 
 class DefaultMemberRequestBuilder implements MemberRequestBuilder {
-    constructor(private readonly _client: Client, private readonly _teamId: string, private _userId: string) {}
+    constructor(
+        private readonly _client: Client,
+        private readonly _teamId: string,
+        private _userId: string,
+    ) {}
 
     public id(userId: string): MemberRequestBuilder {
         this._userId = userId;
@@ -151,7 +161,10 @@ class DefaultMemberRequestBuilder implements MemberRequestBuilder {
 }
 
 class DefaultChannelsRequestBuilder implements ChannelsRequestBuilder {
-    constructor(private readonly _client: Client, private readonly _teamId: string) {}
+    constructor(
+        private readonly _client: Client,
+        private readonly _teamId: string,
+    ) {}
 
     public id(channelId: string): ChannelRequestBuilder {
         return new DefaultChannelRequestBuilder(this._client, this._teamId, channelId);
@@ -166,10 +179,14 @@ class DefaultChannelRequestBuilder implements ChannelRequestBuilder {
     public messages: MessagesRequestBuilder = new DefaultMessagesRequestBuilder(
         this._client,
         this._teamId,
-        this._channelId
+        this._channelId,
     );
 
-    constructor(private readonly _client: Client, private readonly _teamId: string, private _channelId: string) {}
+    constructor(
+        private readonly _client: Client,
+        private readonly _teamId: string,
+        private _channelId: string,
+    ) {}
 
     public id(channelId: string): ChannelRequestBuilder {
         this._channelId = channelId;
@@ -185,7 +202,7 @@ class DefaultMessagesRequestBuilder implements MessagesRequestBuilder {
     constructor(
         private readonly _client: Client,
         private readonly _teamId: string,
-        private readonly _channelId: string
+        private readonly _channelId: string,
     ) {}
 
     public id(messageId: string): MessageRequestBuilder {
@@ -202,14 +219,14 @@ class DefaultMessageRequestBuilder implements MessageRequestBuilder {
         this._client,
         this._teamId,
         this._channelId,
-        this._messageId
+        this._messageId,
     );
 
     constructor(
         private readonly _client: Client,
         private readonly _teamId: string,
         private readonly _channelId: string,
-        private _messageId: string
+        private _messageId: string,
     ) {}
 
     public id(messageId: string): MessageRequestBuilder {
@@ -227,7 +244,7 @@ class DefaultRepliesRequestBuilder implements RepliesRequestBuilder {
         private readonly _client: Client,
         private readonly _teamId: string,
         private readonly _channelId: string,
-        private readonly _messageId: string
+        private readonly _messageId: string,
     ) {}
 
     public id(replyId: string): ReplyRequestBuilder {
@@ -247,7 +264,7 @@ class DefaultReplyRequestBuilder implements ReplyRequestBuilder {
         private readonly _teamId: string,
         private readonly _channelId: string,
         private readonly _messageId: string,
-        private _replyId: string
+        private _replyId: string,
     ) {}
 
     public id(replyId: string): ReplyRequestBuilder {
@@ -258,7 +275,7 @@ class DefaultReplyRequestBuilder implements ReplyRequestBuilder {
     public async get(): Promise<ChatMessage> {
         return this._client
             .api(
-                `/teams/${this._teamId}/channels/${this._channelId}/messages/${this._messageId}/replies/${this._replyId}`
+                `/teams/${this._teamId}/channels/${this._channelId}/messages/${this._messageId}/replies/${this._replyId}`,
             )
             .get();
     }
@@ -275,7 +292,7 @@ export const msalClient = new ConfidentialClientApplication({
 export const graphClient: DefaultGraphClient = new DefaultGraphClient({
     authProvider: {
         async getAccessToken(
-            _authenticationProviderOptions: AuthenticationProviderOptions | undefined
+            _authenticationProviderOptions: AuthenticationProviderOptions | undefined,
         ): Promise<string> {
             msalClient.clearCache();
             const result: AuthenticationResult | null = await msalClient.acquireTokenByClientCredential({
@@ -284,7 +301,7 @@ export const graphClient: DefaultGraphClient = new DefaultGraphClient({
             if (!result?.accessToken) {
                 throw new Error("Could not acquire access token for Graph API client.");
             }
-            // console.debug(result?.accessToken);
+            console.debug(result);
             return result.accessToken;
         },
     },

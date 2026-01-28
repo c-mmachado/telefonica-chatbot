@@ -27,45 +27,47 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
     public async run(context: TurnContext, _message: HandlerMessage): Promise<any> {
         const activityValue: AdaptiveCardActionActivityValue = context.activity.value;
         const actionData: AdaptiveCardActionPositiveTicketPageData = activityValue?.action?.data;
-        const state: Record<string, any> = (context as any).request().data;
+        const data: Record<string, any> = (context as any).request().data;
 
         console.debug(`actionData:`, actionData);
-        console.debug(`state:`, state);
+        console.debug(`data:`, data);
 
-        if (state.gui.page === 0) {
+        if (data.gui.page === 0) {
             // If the state is on page 0, we need to update the 'state.ticket' object with the data from the action
-            for (const [key, field] of Object.entries<any>(state.ticket)) {
+            for (const [key, field] of Object.entries<any>(data.ticket)) {
                 if (isKeyOf(key, actionData)) {
                     field.value = actionData[key];
                 }
             }
 
-            const customFields: any[] = await this._buildCustomFields(state, actionData);
+            const customFields: any[] = await this._buildCustomFields(data, actionData);
             page1.body[4].items = customFields;
-            state.page1 = page1;
+            data.page1 = page1;
 
             customFields[0].items[1].items[0].choices =
-                state.ticket.customFields[Number(customFields[0].items[1].items[0].id)].choices;
+                data.ticket.customFields[Number(customFields[0].items[1].items[0].id)].choices;
             customFields[0].items[1].selectAction.isEnabled = true;
 
             // Update the state GUI properties to reflect the state of the ticket creation
-            state.gui.page = 1;
-            state.gui.buttons.create.enabled = false;
-            state.gui.buttons.create.title = "Crear Ticket";
-            state.gui.buttons.create.tooltip = "Crea un nuevo ticket";
+            data.gui.page = 1;
+            data.gui.buttons.create.enabled = false;
+            data.gui.buttons.create.title = "Crear Ticket";
+            data.gui.buttons.create.tooltip = "Crea un nuevo ticket";
 
             // Prepare the card data for the adaptive card
             const cardData: AdaptiveCardTicketCardPageData = {
                 requestId: actionData.requestId,
-                gui: state.gui,
+                gui: data.gui,
             };
+
+            console.debug(`cardData:`, cardData);
 
             // Expands the adaptive card template with the data provided
             const cardJson = new ACData.Template(page1).expand({
                 $root: cardData,
             });
 
-            console.debug(`cardJson:`, cardJson);
+            // console.debug(`cardJson:`, cardJson);
 
             // Update the existing adaptive card activity, id'ed by 'handlerContext.context.activity.replyToId'
             // with the new adaptive card JSON
@@ -80,7 +82,10 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
             await context.sendActivity(message);
 
             console.debug(`Moving to page 1`);
+            return;
         }
+        console.warn(`Next page ticket action invoke on unsupported page: ${data.gui.page}`);
+        // TODO: Maybe throw
     }
 
     private async _buildCustomFields(

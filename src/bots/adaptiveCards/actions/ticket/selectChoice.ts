@@ -20,27 +20,29 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
     public async run(context: TurnContext, _message: HandlerMessage): Promise<any> {
         const activityValue: AdaptiveCardActionActivityValue = context.activity.value;
         const actionData: AdaptiveCardActionSelectChoiceData = activityValue?.action?.data;
+        const data: Record<string, any> = (context as any).request().data;
+
+        console.debug(`actionData:`, actionData);
+        console.debug(`data:`, data);
 
         // Validate that we can retrieve the state
-        const state: Record<string, any> = (context as any).request().data;
-        if (!state) {
+        if (!data) {
             throw new Error("Ticket adaptive card state is not initialized");
         }
 
-        const page: number = state.gui.page;
-
-        console.debug(`page:`, page);
+        const page: number = data.gui.page;
+        console.debug(`pageNumber:`, page);
 
         // For custom fields, we need to update the state with the selected choice
         const customFieldId: string = actionData.choice;
-        await this._selectCustomFieldChoice(state, activityValue, customFieldId);
+        await this._selectCustomFieldChoice(data, activityValue, customFieldId);
 
         // Check if all custom fields are filled in and if the create button should be enabled
         let enabled: boolean = true;
-        const customFields = state.page1.body[4].items;
+        const customFields = data.page1.body[4].items;
         for (const item of customFields) {
             const key = item.items[1].items?.[0].id || item.items[1].id; // item.items[0].id;
-            const field = state.ticket.customFields[key];
+            const field = data.ticket.customFields[key];
 
             console.debug(`field.id:`, field.id, `field.value:`, field.value);
 
@@ -51,21 +53,23 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
             }
         }
         // Update the create button state based on the custom fields validation
-        state.gui.buttons.create.enabled = enabled;
+        data.gui.buttons.create.enabled = enabled;
         console.debug(`enabled:`, enabled);
 
         // Update the GUI properties of the card to reflect the state of the ticket creation
         const cardData: AdaptiveCardTicketCardPageData = {
             requestId: actionData.requestId,
-            gui: state.gui,
+            gui: data.gui,
         };
 
+        console.debug(`cardData:`, cardData);
+
         // Expands the adaptive card template with the data provided
-        const cardJson = new ACTemplating.Template(state.page1).expand({
+        const cardJson = new ACTemplating.Template(data.page1).expand({
             $root: cardData,
         });
 
-        console.debug(`cardJson:`, cardJson);
+        // console.debug(`cardJson:`, cardJson);
 
         // Update the card with the ticket information that was just submitted
         const message = MessageFactory.attachment(CardFactory.adaptiveCard(cardJson));
@@ -96,12 +100,12 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
     }
 
     private async _selectCustomFieldChoice(
-        state: Record<string, any>,
+        data: Record<string, any>,
         activityValue: AdaptiveCardActionActivityValue,
-        customFieldId: string
+        customFieldId: string,
     ): Promise<void> {
         const customFieldValue: string = (activityValue as any)[customFieldId];
-        const customFieldState = state.ticket.customFields[customFieldId];
+        const customFieldState = data.ticket.customFields[customFieldId];
 
         if (!customFieldValue) {
             // If customFieldValue is empty but customField.value is defined, it means the user wants to reset the field
@@ -111,7 +115,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
                 return;
             }
 
-            const customFieldsJson = state.page1.body[4].items;
+            const customFieldsJson = data.page1.body[4].items;
             for (const customFieldJson of customFieldsJson) {
                 const keyJson: string = customFieldJson.items[1].items?.[0].id || customFieldJson.items[1].id; // customFieldJson.items[0].id;
 
@@ -134,7 +138,7 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
                 }
             }
 
-            return await this._resetField(state, customFieldId, null);
+            return await this._resetField(data, customFieldId, null);
         }
 
         if (!customFieldState) {
@@ -146,10 +150,10 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
             return;
         }
 
-        const customFieldsJson = state.page1.body[4].items;
+        const customFieldsJson = data.page1.body[4].items;
         for (const customFieldJson of customFieldsJson) {
             const keyJson: string = customFieldJson.items[1].items?.[0].id || customFieldJson.items[1].id; // customFieldJson.items[0].id;
-            const currentFieldState: any = state.ticket.customFields[keyJson];
+            const currentFieldState: any = data.ticket.customFields[keyJson];
 
             // Update the field value in the state with the "auto" inputs returned by the adaptive card
             if (keyJson in activityValue) {
@@ -185,15 +189,15 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
             }
         }
 
-        console.debug(`state.ticket:`, state.ticket);
+        console.debug(`data.ticket:`, data.ticket);
 
-        return await this._resetField(state, customFieldId, customFieldValue);
+        return await this._resetField(data, customFieldId, customFieldValue);
     }
 
     private async _resetField(
         state: Record<string, any>,
         customFieldId: string,
-        customFieldValue: string | null
+        customFieldValue: string | null,
     ): Promise<void> {
         console.debug(`customFieldId: '${customFieldId}'`);
 

@@ -33,29 +33,32 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
     public async run(context: TurnContext, _handlerMessage: HandlerMessage): Promise<any> {
         const activityValue: AdaptiveCardActionActivityValue = context.activity.value;
         const actionData: AdaptiveCardActionPositiveTicketPageData = activityValue?.action?.data;
-        const state: Record<string, any> = (context as any).request().data;
+        const data: Record<string, any> = (context as any).request().data;
 
-        if (state.gui.page === 1) {
-            for (const [key, value] of Object.entries<any>(state.ticket.customFields)) {
+        console.debug(`actionData:`, actionData);
+        console.debug(`data:`, data);
+
+        if (data.gui.page === 1) {
+            for (const [key, value] of Object.entries<any>(data.ticket.customFields)) {
                 if (isKeyOf(key, actionData)) {
                     value.value = actionData[key];
                 }
             }
 
             // Creates the ticket in the RT API
-            await this._createTicket(context, state);
+            await this._createTicket(context, data);
 
             // Update the GUI to reflect the state of the ticket creation
-            state.gui.buttons.create.enabled = false;
+            data.gui.buttons.create.enabled = false;
             // state.gui.buttons.cancel.title = "Borrar Hilo";
             // state.gui.buttons.cancel.tooltip = "Borra el hilo de conversacion";
-            state.gui.buttons.cancel.title = "Ocultar ticket";
-            state.gui.buttons.cancel.tooltip = "Oculta este ticket";
+            data.gui.buttons.cancel.title = "Ocultar ticket";
+            data.gui.buttons.cancel.tooltip = "Oculta este ticket";
 
-            const customFieldsJson = state.page1.body[4].items;
+            const customFieldsJson = data.page1.body[4].items;
             for (const customFieldJson of customFieldsJson) {
                 const keyJson: string = customFieldJson.items[1].items?.[0].id || customFieldJson.items[1].id; //customFieldJson.items[0].id;
-                const cfState: any = state.ticket.customFields[keyJson];
+                const cfState: any = data.ticket.customFields[keyJson];
 
                 if (cfState.type === "Select") {
                     customFieldJson.items[1].items[0].type = "TextBlock";
@@ -69,14 +72,18 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
 
             // Prepare the card data for the adaptive card
             const cardData: AdaptiveCardTicketCardPageData = {
-                requestId: state.requestId,
-                gui: state.gui,
+                requestId: data.requestId,
+                gui: data.gui,
             };
+
+            console.debug(`cardData:`, cardData);
 
             // Expands the adaptive card template with the data provided
             const cardJson = new ACData.Template(page1).expand({
                 $root: cardData,
             });
+
+            console.debug(`cardJson:`, cardJson);
 
             // Creates a message attachment activity with the adaptive card using the expanded card template
             // and updated the existing adaptive card activity, id'ed by ' handlerContext.context.activity.replyToId'
@@ -86,11 +93,17 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
 
             // Sends the update to the existing adaptive card to the user
             await context.updateActivity(message);
+            return;
         }
+
+        console.warn(`Create ticket action invoke on unsupported page: ${data.gui.page}`);
+        // TODO: Maybe throw
     }
 
-    private async _createTicket(context: TurnContext, state: Record<string, any>): Promise<void> {
+    private async _createTicket(context: TurnContext, data: Record<string, any>): Promise<void> {
         const trigger: HandlerTriggerData = (context as any).trigger();
+
+        console.debug(`trigger:`, trigger);
 
         // Get the initial message in the thread (The message that started the thread and contains a subject header)
         let thread: ChatMessage = trigger.thread!;
@@ -122,9 +135,9 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
         console.debug(`threadMessages.length: ${replies?.length}`);
 
         // Get the chosen queue from 'ticketCategoryChoiceSet' and get the queue from the API
-        const queue: Queue = await this._rt.queues.id(state.ticket.ticketCategoryChoiceSet.value).request.get();
+        const queue: Queue = await this._rt.queues.id(data.ticket.ticketCategoryChoiceSet.value).request.get();
 
-        console.debug(`state.ticket:`, state.ticket);
+        console.debug(`data.ticket:`, data.ticket);
 
         if (!trigger.threadFrom?.email) {
             throw new Error("Could not determine the email address of the user that started the thread");
@@ -134,9 +147,9 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
         }
 
         const customFieldsBody: { [key: string]: string } = {};
-        if (state.ticket.customFields && Object.keys(state.ticket.customFields).length > 0) {
+        if (data.ticket.customFields && Object.keys(data.ticket.customFields).length > 0) {
             // If custom fields are provided, convert them to the expected format
-            for (const [_, value] of Object.entries<any>(state.ticket.customFields)) {
+            for (const [_, value] of Object.entries<any>(data.ticket.customFields)) {
                 customFieldsBody[value.text] = value.value;
             }
         }
@@ -146,9 +159,9 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
         // Create the ticket in the RT API
         const ticket: TicketRef = await this._rt.tickets.create.request.queryParam("Queue", queue.id).post({
             Subject: thread.subject ?? "No Subject",
-            Status: state.ticket.ticketStateChoiceSet.value,
-            Content: state.ticket.ticketDescriptionInput.value,
-            TimeWorked: state.ticket.ticketTimeTakenInput.value,
+            Status: data.ticket.ticketStateChoiceSet.value,
+            Content: data.ticket.ticketDescriptionInput.value,
+            TimeWorked: data.ticket.ticketTimeTakenInput.value,
             Requestor: trigger.threadFrom.email,
             Owner: owner.Name, //trigger.replyFrom.email,
             CustomFields: customFieldsBody,
