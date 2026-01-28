@@ -838,13 +838,11 @@ export abstract class BaseSchemaEndpointConfigurer<
         //     path = path(this);
         // } else
         if (typeof path === "string") {
-            const pathStr: string = path;
-
-            console.debug("Original path string:", pathStr);
+            console.debug("Original path string:", path);
             console.debug("Resolving path with variables:", this._variables);
 
             Object.entries(this._variables).forEach(([key, value]: [string, string | number | boolean]): void => {
-                path = pathStr.replace(`{${key}}`, encodeURIComponent(String(value)));
+                path = path!.replace(`{${key}}`, encodeURIComponent(String(value)));
             });
         } else {
             throw new Error("Property 'path' must be defined in the endpoint's schema configuration.");
