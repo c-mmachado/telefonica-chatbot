@@ -172,7 +172,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
                         .replace(/\${placeholder}/g, customFieldMap[field.id].placeholder)
                         .replace(/\${id}/g, customFieldMap[field.id].id)
                         .replace(/\${required}/g, String(field.id in freeCustomFields))
-                        .replace(/\${sequenceId}/g, state.sequenceId)
+                        .replace(/\${requestId}/g, state.requestId)
                         .replace(/\${visible}/g, String(customFieldMap[field.id].visible))
                         .replace(/<id>/g, field.id),
                 );
@@ -182,7 +182,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
                         .replace(/\${text}/g, customFieldMap[field.id].text)
                         .replace(/\${placeholder}/g, customFieldMap[field.id].placeholder)
                         .replace(/\${id}/g, customFieldMap[field.id].id)
-                        .replace(/\${sequenceId}/g, state.sequenceId)
+                        .replace(/\${requestId}/g, state.requestId)
                         .replace(/\${visible}/g, String(customFieldMap[field.id].visible))
                         .replace(/<id>/g, field.id),
                 );
