@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { HyperlinkRef, refHyperlinkSchema, typedHyperlinkSchema } from "./base";
+import { HyperlinkRef, HyperlinkType, refHyperlinkSchema, typedHyperlinkSchema } from "./base";
 import {
     createSchemaEndpointConfig,
     SchemaEndpointConfig,
@@ -175,7 +175,7 @@ class DefaultQueuesEndpointConfigurer
                         queuesSchemaConfig,
                         this.callbacks ?? {},
                         this.path(),
-                        (ref) => !!(ref?.ref === HyperlinkRef.Queue && ref?.id),
+                        (ref) => !!(ref?.type === HyperlinkType.Queue && ref?.id),
                         async (ref) => {
                             return this.id(ref.id!).request.get();
                         }

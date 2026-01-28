@@ -527,6 +527,7 @@ const client = createClient(
     config.apiEndpoint,
     config.apiBasePath,
     async (): Promise<{ headerName: string; value: string }> => {
+        return { headerName: "", value: "" }; // Temporary bypass
         return fetch(config.apiEndpoint, {
             method: HttpMethod.Post,
             headers: {
@@ -545,13 +546,13 @@ const client = createClient(
             const cookies = response.headers.getSetCookie();
             if (!cookies || cookies.length === 0) {
                 throw new Error(
-                    "No authentication cookie was returned by the RT API. The credentials may be invalid or there may be a server issue."
+                    "No authentication cookie was returned by the RT API. The credentials may be invalid or there may be a server issue.",
                 );
             }
 
             return { headerName: HttpHeaders.Cookie, value: cookies[0] };
         });
-    }
+    },
 );
 export const rt: RTClient = new DefaultRTClient(client);
 

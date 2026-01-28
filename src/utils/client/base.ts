@@ -11,7 +11,7 @@ class DefaultClient implements Client {
     constructor(
         endpoint: string,
         basePath: string,
-        private readonly _authProvider?: () => Promise<{ headerName: string; value: string }>
+        private readonly _authProvider?: () => Promise<{ headerName: string; value: string }>,
     ) {
         this._endpoint = `${endpoint}${endpoint.endsWith("/") ? "" : "/"}${
             basePath.startsWith("/") ? basePath.slice(1) : basePath
@@ -22,7 +22,7 @@ class DefaultClient implements Client {
         path = path.replace(this._endpoint, "");
         return DefaultClientRequest.create(
             `${this._endpoint}${path.startsWith("/") ? path.slice(1) : path}`,
-            this._authProvider
+            this._authProvider,
         );
     }
 }
@@ -30,7 +30,7 @@ class DefaultClient implements Client {
 export function createClient(
     endpoint: string,
     basePath: string,
-    authProvider?: () => Promise<{ headerName: string; value: string }>
+    authProvider?: () => Promise<{ headerName: string; value: string }>,
 ): Client {
     return new DefaultClient(endpoint, basePath, authProvider);
 }
@@ -74,7 +74,7 @@ export interface ClientRequest {
 class DefaultClientRequest implements ClientRequest {
     public static create(
         path: string,
-        authProvider?: () => Promise<{ headerName: string; value: string }>
+        authProvider?: () => Promise<{ headerName: string; value: string }>,
     ): ClientRequest {
         return new DefaultClientRequest(authProvider, path);
     }
@@ -84,7 +84,7 @@ class DefaultClientRequest implements ClientRequest {
         private _path: string = "",
         private readonly _queryParams: QueryParams = {},
         private readonly _headers: Headers = {},
-        private _body: any = undefined
+        private _body: any = undefined,
     ) {
         this.path(this._path ?? "");
     }
@@ -111,12 +111,13 @@ class DefaultClientRequest implements ClientRequest {
 
     private async _request(
         method: HttpMethod,
-        options?: { body?: unknown; headers?: Headers; queryParams?: QueryParams }
+        options?: { body?: unknown; headers?: Headers; queryParams?: QueryParams },
     ): Promise<any> {
         let headers = {
             Accept: HttpContentTypes.Json,
             ...this._toHeaders(options?.headers ?? {}),
         };
+
         const auth = await this._authProvider?.();
         if (auth && auth.headerName && auth.value) {
             headers = {
@@ -125,16 +126,24 @@ class DefaultClientRequest implements ClientRequest {
             };
         }
 
+        console.debug(`Making request to resource '${method} ${this._path}'`);
+        console.debug(`options:`, options);
+
         return fetch(this._url(options?.queryParams ?? {}), {
             method: method.toUpperCase(),
             headers: headers,
             body: options?.body ? JSON.stringify(options?.body) : this._body ? JSON.stringify(this._body) : undefined,
-        }).then((response: Response): Promise<any> => {
-            if (!response.ok) {
-                throw new Error(`Request failed with status ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        });
+        })
+            .then((response: Response): Promise<any> => {
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .catch((error: any): Promise<any> => {
+                console.error(`An error occurred during a request to resource '${method} ${this._path}'`);
+                return Promise.reject(error);
+            });
     }
 
     public async get<GetResponse>(): Promise<GetResponse>;
@@ -219,7 +228,7 @@ class DefaultClientRequest implements ClientRequest {
         path = path.trim();
         path = path.startsWith("/") ? path.slice(1) : path;
         if (path.includes("?")) {
-            const parts = path.split("?")[0];
+            const parts = path.split("?");
             this._path = parts[0];
 
             if (parts.length > 1) {
@@ -298,8 +307,9 @@ export type MethodConfig<Request = any, Response = any> =
     | BodyMethodConfig<Request, Response>
     | ResponseMethodConfig<Response>;
 
-export interface SchemaEndpointConfig<Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {}>
-    extends EndpointConfig {
+export interface SchemaEndpointConfig<
+    Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {},
+> extends EndpointConfig {
     methods?: Methods;
 }
 
@@ -319,7 +329,7 @@ export interface SchemaEndpointConfig<Methods extends Partial<Record<HttpMethod,
 
 export function createSchemaEndpointConfig<
     const Config extends SchemaEndpointConfig<Methods>,
-    Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {}
+    Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {},
 >(config: Config): Config {
     return config;
 }
@@ -408,33 +418,26 @@ export type SchemaClientRequest<Config extends SchemaEndpointConfig> = Configura
                 ? never
                 : () => Promise<Response>
             : Response extends undefined
-            ? (content: Request) => Promise<void>
-            : (content: Request) => Promise<Response>
+              ? (content: Request) => Promise<void>
+              : (content: Request) => Promise<Response>
         : never;
 };
 
-type MethodType<Config extends SchemaEndpointConfig, Method extends HttpMethod> = InferFromConfig<Config> extends {
-    [Method in HttpMethod]?: {
-        Request: any;
-        Response: any;
-    };
-}
-    ? InferFromConfig<Config>[Method]
-    : never;
+type MethodType<Config extends SchemaEndpointConfig, Method extends HttpMethod> =
+    InferFromConfig<Config> extends {
+        [Method in HttpMethod]?: {
+            Request: any;
+            Response: any;
+        };
+    }
+        ? InferFromConfig<Config>[Method]
+        : never;
 
-export type MethodRequestType<Config extends SchemaEndpointConfig, Method extends HttpMethod> = MethodType<
-    Config,
-    Method
-> extends { Request: infer Request }
-    ? Request
-    : never;
+export type MethodRequestType<Config extends SchemaEndpointConfig, Method extends HttpMethod> =
+    MethodType<Config, Method> extends { Request: infer Request } ? Request : never;
 
-export type MethodResponseType<Config extends SchemaEndpointConfig, Method extends HttpMethod> = MethodType<
-    Config,
-    Method
-> extends { Response: infer Response }
-    ? Response
-    : never;
+export type MethodResponseType<Config extends SchemaEndpointConfig, Method extends HttpMethod> =
+    MethodType<Config, Method> extends { Response: infer Response } ? Response : never;
 
 export type BeforeCallbacks<Config extends SchemaEndpointConfig> = Partial<{
     [Method in keyof InferFromConfig<Config>]: InferFromConfig<Config>[Method] extends {
@@ -466,7 +469,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
     public static create<Config extends SchemaEndpointConfig>(
         request: ClientRequest,
         config: Config,
-        callbacks?: Callbacks<Config>
+        callbacks?: Callbacks<Config>,
     ): SchemaClientRequest<Config> {
         const base = new DefaultSchemaClientRequest<Config>(request, config, callbacks);
 
@@ -483,7 +486,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
                     const method: HttpMethod | undefined = Object.entries(HttpMethod).find(
                         (value: [string, HttpMethod], _index: number, _array: [string, HttpMethod][]) => {
                             return value[0] === propertyName || value[1] === propertyName;
-                        }
+                        },
                     )?.[1];
 
                     return (content: any) => {
@@ -502,7 +505,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
     private constructor(
         request: ClientRequest,
         private readonly _config: Config,
-        private readonly _callbacks?: Callbacks<Config>
+        private readonly _callbacks?: Callbacks<Config>,
     ) {
         super(request);
     }
@@ -529,7 +532,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
 
     public async method<Method extends HttpMethod & keyof InferFromConfig<Config>>(
         content: MethodRequestType<Config, Method>,
-        method: Method
+        method: Method,
     ): Promise<MethodResponseType<Config, Method>> {
         if (!this._supportsMethod(method)) {
             throw new Error(`Resource does not support method '${method}'`);
@@ -539,7 +542,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
         const hasRequestSchema = !!requestSchema && requestSchema instanceof ZodType;
         if (!hasRequestSchema && content) {
             console.warn(
-                `No request schema defined for method '${method}', but content was provided. It will be ignored.`
+                `No request schema defined for method '${method}', but content was provided. It will be ignored.`,
             );
         }
 
@@ -557,7 +560,14 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
         }
         const requestMethod = this.request[requestKey] as Function;
 
-        let response = undefined;
+        let response: unknown;
+        // if (this._config.path === "/queues/all") {
+        //     response = tmp;
+        // } else if (this._config.path === "/queue/{id}") {
+        //     response = tmp2;
+        // } else {
+        // }
+
         if (hasRequestSchema) {
             response = await requestMethod.call(this.request, validatedContent);
         } else {
@@ -569,13 +579,15 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
         const hasResponseSchema = !!responseSchema && responseSchema instanceof ZodType;
         if (!hasResponseSchema && response) {
             console.warn(
-                `No response schema defined for method '${method}', but response was received. It will be ignored.`
+                `No response schema defined for method '${method}', but response was received. It will be ignored.`,
             );
         }
         if (!hasResponseSchema) {
             return undefined as MethodResponseType<Config, Method>;
         }
-        return responseSchema.parse(response);
+
+        responseSchema.parse(response); // TODO: I don't like this either
+        return response as MethodResponseType<Config, Method>;
     }
 
     // public async get(): Promise<MethodResponseType<Config, HttpMethod.Get>> {
@@ -628,7 +640,7 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
 function createSchemaClientRequest<Config extends SchemaEndpointConfig>(
     request: ClientRequest,
     config: Config,
-    callbacks?: Callbacks<Config>
+    callbacks?: Callbacks<Config>,
 ): SchemaClientRequest<Config> {
     if (!request) {
         throw new Error("Argument 'request' must be a valid 'ClientRequest' instance.");
@@ -790,14 +802,14 @@ export interface SchemaEndpointConfigurer<Config extends SchemaEndpointConfig> {
 //     request: PagedSchemaClientRequest<C>;
 // }
 
-export abstract class BaseSchemaEndpointConfigurer<Config extends SchemaEndpointConfig>
-    implements SchemaEndpointConfigurer<Config>
-{
+export abstract class BaseSchemaEndpointConfigurer<
+    Config extends SchemaEndpointConfig,
+> implements SchemaEndpointConfigurer<Config> {
     constructor(
         protected readonly client: Client,
         protected readonly config: Config,
         protected readonly callbacks?: Callbacks<Config>,
-        private readonly _variables: Record<string, string | number | boolean> = {}
+        private readonly _variables: Record<string, string | number | boolean> = {},
     ) {
         if (!client) {
             throw new Error("Argument 'client' must be a valid 'Client' instance.");

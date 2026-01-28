@@ -194,6 +194,10 @@ export class TeamsBot extends TeamsActivityHandler {
       .run(this._contextFactory.create(context))
       .catch((error: any): void => {
         console.error(error);
+        while (error?.cause) {
+            error = error.cause;
+            console.error("Caused by:", error);
+        }
       });
 
     // Save any state changes after the bot logic completes
@@ -260,6 +264,10 @@ export class TeamsBot extends TeamsActivityHandler {
       .onSignInAction(context, query)
       .catch((error: any): void => {
         console.error(error);
+        while (error?.cause) {
+            error = error.cause;
+            console.error("Caused by:", error);
+        }
       });
   }
 
@@ -278,6 +286,10 @@ export class TeamsBot extends TeamsActivityHandler {
       .continueDialog(context, OAuthDialog.name)
       .catch((error: any): void => {
         console.error(error);
+        while (error?.cause) {
+            error = error.cause;
+            console.error("Caused by:", error);
+        }
       });
 
     return await next();
@@ -352,6 +364,10 @@ export class TeamsBot extends TeamsActivityHandler {
       .resolveAndDispatch(context, text)
       .catch((error: any): void => {
         console.error(error);
+        while (error?.cause) {
+            error = error.cause;
+            console.error("Caused by:", error);
+        }
       });
 
     return await next();

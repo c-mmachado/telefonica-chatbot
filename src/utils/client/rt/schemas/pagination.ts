@@ -21,8 +21,8 @@ export const createRTPagedCollectionSchema = <T extends z.ZodTypeAny>(itemSchema
         items: z.array(itemSchema),
         page: z.number().min(1),
         per_page: z.number().min(1),
-        total: z.number().min(0),
-        pages: z.number().min(1),
+        total: z.number().min(0).nullable(),
+        pages: z.number().min(1).nullable(),
         count: z.number().min(0),
         next_page: z.string().url().optional(),
         prev_page: z.string().url().optional(),
@@ -34,11 +34,10 @@ interface PagedCollection<_Item> {
 }
 
 export interface RTPagedCollection<Item>
-    extends PagedCollection<Item>,
-        z.infer<ReturnType<typeof createRTPagedCollectionSchema<z.ZodType<Item>>>> {}
+    extends PagedCollection<Item>, z.infer<ReturnType<typeof createRTPagedCollectionSchema<z.ZodType<Item>>>> {}
 
 export const createRTNavigatablePagedCollectionSchema = <T extends z.ZodTypeAny, Config extends SchemaEndpointConfig>(
-    itemSchema: T
+    itemSchema: T,
 ): z.ZodType<RTNavigatablePagedCollection<Config, z.infer<T>>> => {
     type Item = z.infer<T>;
 
@@ -60,17 +59,19 @@ type InferItemFromConfig<Config extends SchemaEndpointConfig> = Config extends {
 }
     ? ZodItem
     : Config extends {
-          methods: {
-              get: {
-                  response: infer Item;
-              };
-          };
-      }
-    ? Item
-    : never;
+            methods: {
+                get: {
+                    response: infer Item;
+                };
+            };
+        }
+      ? Item
+      : never;
 
-export interface RTNavigatablePagedCollection<Config extends SchemaEndpointConfig, Item = InferItemFromConfig<Config>>
-    extends RTPagedCollection<Item> {
+export interface RTNavigatablePagedCollection<
+    Config extends SchemaEndpointConfig,
+    Item = InferItemFromConfig<Config>,
+> extends RTPagedCollection<Item> {
     items: Item[];
 
     next(): SchemaEndpointConfigurer<Config>;
@@ -80,24 +81,25 @@ export interface RTNavigatablePagedCollection<Config extends SchemaEndpointConfi
 
 export function createRTNavigatablePagedCollection<
     Config extends SchemaEndpointConfig,
-    Item = InferItemFromConfig<Config>
+    Item = InferItemFromConfig<Config>,
 >(
     client: Client,
     config: Config,
     callbacks: Callbacks<Config>,
-    page: RTPagedCollection<Item>
+    page: RTPagedCollection<Item>,
 ): RTNavigatablePagedCollection<Config, Item> {
     return new DefaultRTNavigatablePagedCollection(client, config, callbacks, page);
 }
 
-class DefaultRTNavigatablePagedCollection<Config extends SchemaEndpointConfig, Item = InferItemFromConfig<Config>>
-    implements RTNavigatablePagedCollection<Config, Item>
-{
+class DefaultRTNavigatablePagedCollection<
+    Config extends SchemaEndpointConfig,
+    Item = InferItemFromConfig<Config>,
+> implements RTNavigatablePagedCollection<Config, Item> {
     constructor(
         private readonly _client: Client,
         private readonly _config: Config,
         private readonly _callbacks: Callbacks<Config>,
-        private readonly _page: RTPagedCollection<Item>
+        private readonly _page: RTPagedCollection<Item>,
     ) {}
 
     public get items(): Item[] {
@@ -112,11 +114,11 @@ class DefaultRTNavigatablePagedCollection<Config extends SchemaEndpointConfig, I
         return this._page.per_page;
     }
 
-    public get total(): number {
+    public get total(): number | null {
         return this._page.total;
     }
 
-    public get pages(): number {
+    public get pages(): number | null {
         return this._page.pages;
     }
 
@@ -138,14 +140,13 @@ class DefaultRTNavigatablePagedCollection<Config extends SchemaEndpointConfig, I
         }
 
         const nextPage = this.next_page;
-        // TODO: Callbacks should also be propagated to the new instance
         return new (class extends BaseSchemaEndpointConfigurer<Config> implements SchemaEndpointConfigurer<Config> {})(
             this._client,
             {
                 ...this._config,
                 path: nextPage,
             },
-            this._callbacks
+            this._callbacks,
         );
     }
 
@@ -155,14 +156,13 @@ class DefaultRTNavigatablePagedCollection<Config extends SchemaEndpointConfig, I
         }
 
         const prevPage = this.prev_page;
-        // TODO: Callbacks should also be propagated to the new instance
         return new (class extends BaseSchemaEndpointConfigurer<Config> implements SchemaEndpointConfigurer<Config> {})(
             this._client,
             {
                 ...this._config,
                 path: prevPage,
             },
-            this._callbacks
+            this._callbacks,
         );
     }
 }
@@ -170,7 +170,7 @@ class DefaultRTNavigatablePagedCollection<Config extends SchemaEndpointConfig, I
 export async function convertToNavigatablePagedCollection<
     Config extends SchemaEndpointConfig,
     Ref extends HyperlinkEntity,
-    Item
+    Item,
 >(
     response: unknown,
     client: Client,
@@ -178,21 +178,21 @@ export async function convertToNavigatablePagedCollection<
     callbacks: Callbacks<Config>,
     path: string,
     filter?: (ref: Ref) => boolean,
-    mapper?: (ref: Ref) => Promise<Item>
+    mapper?: (ref: Ref) => Promise<Item>,
 ): Promise<RTNavigatablePagedCollection<Config, Item>> {
     if (!response || typeof response !== "object") {
         return Promise.reject(new Error(`Invalid response format for resource '${path}'`));
     }
     const page = response as RTPagedCollection<Ref>;
     const refs = page.items ?? [];
-    const queues: Item[] = await Promise.all(
+    const items: Item[] = await Promise.all(
         refs
             .filter((ref) => (filter ? filter(ref) : true))
-            .map((ref) => (mapper ? mapper(ref) : Promise.resolve(ref as unknown as Item)))
+            .map((ref) => (mapper ? mapper(ref) : Promise.resolve(ref as unknown as Item))),
     );
     const newPage: RTPagedCollection<Item> = {
         ...page,
-        items: queues,
+        items,
     };
     return createRTNavigatablePagedCollection<Config, Item>(client, config, callbacks, newPage);
 }
