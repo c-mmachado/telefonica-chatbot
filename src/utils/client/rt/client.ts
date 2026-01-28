@@ -527,7 +527,6 @@ const client = createClient(
     config.apiEndpoint,
     config.apiBasePath,
     async (): Promise<{ headerName: string; value: string }> => {
-        return { headerName: "", value: "" }; // Temporary bypass
         return fetch(config.apiEndpoint, {
             method: HttpMethod.Post,
             headers: {
