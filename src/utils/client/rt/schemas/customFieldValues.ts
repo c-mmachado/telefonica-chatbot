@@ -7,7 +7,7 @@ import {
     SchemaEndpointConfig,
     SchemaEndpointConfigurer,
 } from "../../base";
-import { HyperlinkRef, refHyperlinkSchema, typedHyperlinkSchema } from "./base";
+import { HyperlinkType, refHyperlinkSchema, typedHyperlinkSchema } from "./base";
 import {
     convertToNavigatablePagedCollection,
     createRTNavigatablePagedCollectionSchema,
@@ -89,7 +89,7 @@ export class EndpointFactory {
     public static customFieldValueId(
         client: Client,
         customFieldId: string,
-        customFieldValueId: string
+        customFieldValueId: string,
     ): CustomFieldValueIdEndpointConfigurer {
         return DefaultCustomFieldValueIdEndpointConfigurer.create(client, customFieldId, customFieldValueId);
     }
@@ -106,7 +106,10 @@ class DefaultCustomFieldValuesEndpointConfigurer
         return new DefaultCustomFieldValuesEndpointConfigurer(client, customFieldId);
     }
 
-    private constructor(client: Client, private readonly _customFieldId: string) {
+    private constructor(
+        client: Client,
+        private readonly _customFieldId: string,
+    ) {
         super(client, customFieldValuesSchemaConfig, {
             after: {
                 get: (response: unknown) => {
@@ -120,10 +123,10 @@ class DefaultCustomFieldValuesEndpointConfigurer
                         customFieldValuesSchemaConfig,
                         this.callbacks ?? {},
                         this.path(),
-                        (ref) => !!(ref?.ref === HyperlinkRef.CustomFieldValue && ref?.id),
+                        (ref) => !!(ref?.type === HyperlinkType.CustomFieldValue && ref?.id),
                         async (ref) => {
                             return this.id(ref.id!).request.get();
-                        }
+                        },
                     );
                 },
             },
@@ -143,7 +146,7 @@ class DefaultCustomFieldValueIdEndpointConfigurer
     public static create(
         client: Client,
         customFieldId: string,
-        customFieldValueId: string
+        customFieldValueId: string,
     ): CustomFieldValueIdEndpointConfigurer {
         return new DefaultCustomFieldValueIdEndpointConfigurer(client, customFieldId, customFieldValueId);
     }
@@ -151,7 +154,7 @@ class DefaultCustomFieldValueIdEndpointConfigurer
     private constructor(
         client: Client,
         private readonly _customFieldId: string,
-        private readonly _customFieldValueId: string
+        private readonly _customFieldValueId: string,
     ) {
         super(client, customFieldValueSchemaConfig);
         this.variable("id", this._customFieldId);
