@@ -22,3 +22,6 @@ lib/
 
 # Extra
 certs/
+
+# Custom ignores
+.credentials
