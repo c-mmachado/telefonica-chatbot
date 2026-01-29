@@ -159,11 +159,11 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             }
         }
 
-        const owner = await this._rt.users.id(trigger.replyFrom.email).request.get();
+        const owner = await this._rt.users.id(trigger.replyFrom.email.split("@", 1)[0]).request.get();
 
         // Create the ticket in the RT API
         const ticket: TicketRef = await this._rt.tickets.create.request.queryParam("Queue", queue.id).post({
-            Subject: thread.subject ?? "No Subject",
+            Subject: thread.subject ?? "<No Subject>",
             Status: data.ticket.ticketStateChoiceSet.value,
             Content: data.ticket.ticketDescriptionInput.value,
             TimeWorked: data.ticket.ticketTimeTakenInput.value,
