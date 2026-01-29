@@ -177,7 +177,9 @@ export class TeamsBot extends TeamsActivityHandler {
         const proxiedContext: TurnContext = this._contextFactory.create(context);
 
         await super.run(proxiedContext).catch(async (error: any): Promise<void> => {
-            this._handleError(context, error);
+            await this._handleError(context, error).catch(async (err: any): Promise<void> => {
+                console.error("Error handling run error:", err);
+            });
         });
 
         // Save any state changes after the bot logic completes
@@ -235,7 +237,9 @@ export class TeamsBot extends TeamsActivityHandler {
 
     private async _onSignInAction(context: TurnContext, query: SigninStateVerificationQuery): Promise<void> {
         return this._handlerManager.onSignInAction(context, query).catch(async (error: any): Promise<void> => {
-            this._handleError(context, error);
+            await this._handleError(context, error).catch(async (err: any): Promise<void> => {
+                console.error("Error handling sign-in action error:", err);
+            });
         });
     }
 
@@ -311,8 +315,10 @@ export class TeamsBot extends TeamsActivityHandler {
             }
         }
 
-        await this._handlerManager.resolveAndDispatch(context, text).catch((error: any): void => {
-            this._handleError(context, error);
+        await this._handlerManager.resolveAndDispatch(context, text).catch(async (error: any): Promise<void> => {
+            await this._handleError(context, error).catch(async (err: any): Promise<void> => {
+                console.error("Error handling message dispatch error:", err);
+            });
         });
 
         return await next();
