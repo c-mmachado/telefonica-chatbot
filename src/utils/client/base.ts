@@ -494,11 +494,25 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
                         return base.method(content, method as HttpMethod & keyof InferFromConfig<Config>);
                     };
                 }
+
                 const value = Reflect.get(target, propertyName, receiver);
-                if (typeof value === "function") {
-                    return value.bind(target);
+
+                if (typeof value !== "function") {
+                    return target[propertyName as keyof typeof target];
                 }
-                return value;
+
+                const boundFunction: Function = value.bind(target);
+                return (...args: any) => {
+                    try {
+                        const result = boundFunction.apply(target, args);
+                        if (result == target) {
+                            return receiver;
+                        }
+                        return result;
+                    } catch (e: any) {
+                        throw e;
+                    }
+                };
             },
         }) as SchemaClientRequest<Config>;
     }
