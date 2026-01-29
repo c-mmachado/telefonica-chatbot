@@ -79,8 +79,8 @@ const updateTicketSchema = z
         Status: z.string().min(1),
         Description: z.string().min(1), // Content Or Description?
         Content: z.string().min(1), // Content Or Description?
-        Requestor: z.string().email().min(1),
-        Owner: z.string().email().min(1),
+        Requestor: z.string().min(1), // .email()
+        Owner: z.string().min(1), // .email()
         TimeWorked: z.number().min(0),
         CustomFields: z.record(z.string().min(1), z.any()),
     })
