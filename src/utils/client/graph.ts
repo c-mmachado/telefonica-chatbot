@@ -254,7 +254,8 @@ class DefaultRepliesRequestBuilder implements RepliesRequestBuilder {
     public async get(): Promise<ChatMessage[]> {
         return this._client
             .api(`/teams/${this._teamId}/channels/${this._channelId}/messages/${this._messageId}/replies`)
-            .get();
+            .get()
+            .then((res: { value?: ChatMessage[] }) => res?.value ?? []);
     }
 }
 
