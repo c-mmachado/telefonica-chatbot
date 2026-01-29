@@ -186,7 +186,7 @@
                             "tooltip": "${gui.buttons.cancel.tooltip}",
                             "style": "destructive",
                             "associatedInputs": "None",
-                            "verb": "negativeTicket",
+                            "verb": "cancelTicket",
                             "isEnabled": "${gui.buttons.cancel.enabled}",
                             "data": {
                                 "requestId": "${requestId}"

@@ -70,7 +70,7 @@ export const bot: TeamsBot = new DefaultTeamsBotBuilder()
     .conversationState(conversationState)
     .userState(userState)
     .handlerManager(handlerManager)
-    .dialogManager(dialogManager)
+    // .dialogManager(dialogManager)
     .techRepository(techRepository)
     .contextFactory(contextFactory)
     .build();

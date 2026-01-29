@@ -30,7 +30,7 @@ export const logger: Logger<ILogObj> = new Logger({
     type: "pretty",
     name: "RootLogger",
     hideLogPositionForProduction: false,
-    prettyLogTemplate: "[{{dateIsoStr}}] [{{location}}] [{{name}}] [{{logLevelName}}] ",
+    prettyLogTemplate: "[{{dateIsoStr}}] [{{fileNameWithLine}}] [{{name}}] [{{logLevelName}}] ",
     prettyErrorTemplate: "{{errorName}}: {{errorMessage}}\n{{errorStack}}",
     prettyErrorStackTemplate: "  • at {{method}} ({{filePathWithLine}})",
     prettyInspectOptions: {
@@ -71,7 +71,7 @@ export const logger: Logger<ILogObj> = new Logger({
             // console.log("addPlaceholders called with logObjMeta", logObjMeta);
             // console.log("placeholderValues", placeholderValues);
 
-            placeholderValues.location = `${placeholderValues.fileNameWithLine}`; // @${logObjMeta.path?.method || "<unknown>"}
+            const location: string = `${placeholderValues.filePathWithLine}`; // @${logObjMeta.path?.method || "<unknown>"}
             // const locationLength = placeholderValues.location.length;
             // let leftPadding = (50 - locationLength) / 2;
             // let rightPadding = leftPadding;
@@ -83,7 +83,7 @@ export const logger: Logger<ILogObj> = new Logger({
             // placeholderValues.location = `${placeholderValues.location.padStart(
             //   leftPadding + locationLength < 50 ? leftPadding + locationLength : 50
             // )}${" ".repeat(rightPadding)}`;
-            placeholderValues.location = `${placeholderValues.location.padStart(50)}`;
+            placeholderValues.fileNameWithLine = `${location.padStart(50)}`;
 
             const levelLength = logObjMeta.logLevelName.length;
             let leftPadding = (8 - levelLength) / 2;

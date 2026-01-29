@@ -15,7 +15,6 @@ import {
 import { BotConfiguration } from "../config/config";
 import { HandlerManager } from "./commands/manager";
 import { DialogManager } from "./dialogs/manager";
-import { OAuthDialog } from "./dialogs/oauthDialog";
 import { AdaptiveCardAction, AdaptiveCardActionActivityValue } from "./adaptiveCards/actions/actions";
 import { AdaptiveCards } from "./adaptiveCards/adaptiveCards";
 
@@ -49,7 +48,7 @@ export interface TeamsBotBuilder {
 
     handlerManager(handlerManager: HandlerManager): TeamsBotBuilder;
 
-    dialogManager(dialogManager: DialogManager): TeamsBotBuilder;
+    // dialogManager(dialogManager: DialogManager): TeamsBotBuilder;
 
     techRepository(techRepository: TechnicianRepository): TeamsBotBuilder;
 
@@ -96,10 +95,10 @@ export class DefaultTeamsBotBuilder implements TeamsBotBuilder {
         return this;
     }
 
-    public dialogManager(dialogManager: DialogManager): TeamsBotBuilder {
-        this._options.dialogManager = dialogManager;
-        return this;
-    }
+    // public dialogManager(dialogManager: DialogManager): TeamsBotBuilder {
+    //     this._options.dialogManager = dialogManager;
+    //     return this;
+    // }
 
     public techRepository(techRepository: TechnicianRepository): TeamsBotBuilder {
         this._options.techRepository = techRepository;
@@ -124,9 +123,9 @@ export class DefaultTeamsBotBuilder implements TeamsBotBuilder {
         if (!this._options.handlerManager) {
             throw new Error(`Cannot build TeamsBot: missing 'handlerManager' option.`);
         }
-        if (!this._options.dialogManager) {
-            throw new Error(`Cannot build TeamsBot: missing 'dialogManager' option.`);
-        }
+        // if (!this._options.dialogManager) {
+        //     throw new Error(`Cannot build TeamsBot: missing 'dialogManager' option.`);
+        // }
         if (!this._options.techRepository) {
             throw new Error(`Cannot build TeamsBot: missing 'techRepository' option.`);
         }
@@ -138,7 +137,7 @@ export class DefaultTeamsBotBuilder implements TeamsBotBuilder {
             this._options.conversationState,
             this._options.userState,
             this._options.handlerManager,
-            this._options.dialogManager,
+            // this._options.dialogManager,
             this._options.techRepository,
             this._options.contextFactory,
         );
@@ -151,7 +150,7 @@ export class TeamsBot extends TeamsActivityHandler {
         private readonly _conversationState: ConversationState,
         private readonly _userState: UserState,
         private readonly _handlerManager: HandlerManager,
-        private readonly _dialogManager: DialogManager,
+        // private readonly _dialogManager: DialogManager,
         private readonly _techRepository: TechnicianRepository,
         private readonly _contextFactory: HandlerTurnContextFactory,
     ) {
@@ -163,7 +162,7 @@ export class TeamsBot extends TeamsActivityHandler {
         // );
         this.onMessage(this._handleMessage.bind(this));
         this.onMembersAdded(this._handleMembersAdded.bind(this));
-        this.onTokenResponseEvent(this._handleTokenResponse.bind(this));
+        // this.onTokenResponseEvent(this._handleTokenResponse.bind(this));
     }
 
     public get config(): BotConfiguration {
@@ -175,20 +174,15 @@ export class TeamsBot extends TeamsActivityHandler {
      */
     public async run(context: TurnContext): Promise<void> {
         // Entry point for the bot logic which receives all incoming activities
-        await super.run(this._contextFactory.create(context)).catch(async (error: any): Promise<void> => {
-            let errorMsg: string = `Hay ocurrido un error al procesar la actividad. Por favor, inténtalo de nuevo más tarde.\n`;
-            errorMsg += `${error.message}`;
-            console.error(error);
-            while (error?.cause) {
-                error = error.cause;
-                errorMsg += `\nCaused by: ${error.message}`;
-                console.error("Caused by:", error);
-            }
+        const proxiedContext: TurnContext = this._contextFactory.create(context);
+
+        await super.run(proxiedContext).catch(async (error: any): Promise<void> => {
+            this._handleError(context, error);
         });
 
         // Save any state changes after the bot logic completes
-        await this._conversationState.saveChanges(context, false);
-        await this._userState.saveChanges(context, false);
+        await this._conversationState.saveChanges(proxiedContext, false);
+        await this._userState.saveChanges(proxiedContext, false);
     }
 
     /**
@@ -240,33 +234,29 @@ export class TeamsBot extends TeamsActivityHandler {
     }
 
     private async _onSignInAction(context: TurnContext, query: SigninStateVerificationQuery): Promise<void> {
-        return this._handlerManager.onSignInAction(context, query).catch((error: any): void => {
-            console.error(error);
-            while (error?.cause) {
-                error = error.cause;
-                console.error("Caused by:", error);
-            }
+        return this._handlerManager.onSignInAction(context, query).catch(async (error: any): Promise<void> => {
+            this._handleError(context, error);
         });
     }
 
-    private async _handleTokenResponse(context: TurnContext, next: () => Promise<void>): Promise<void> {
-        // This activity type can be triggered during an SSO flow (Currently unused)
-        console.debug(`context.activity:`, context.activity);
+    // private async _handleTokenResponse(context: TurnContext, next: () => Promise<void>): Promise<void> {
+    //     // This activity type can be triggered during an SSO flow (Currently unused)
+    //     console.debug(`context.activity:`, context.activity);
 
-        if (context.activity?.replyToId) {
-            await context.deleteActivity(context.activity.replyToId);
-        }
+    //     if (context.activity?.replyToId) {
+    //         await context.deleteActivity(context.activity.replyToId);
+    //     }
 
-        await this._dialogManager.continueDialog(context, OAuthDialog.name).catch((error: any): void => {
-            console.error(error);
-            while (error?.cause) {
-                error = error.cause;
-                console.error("Caused by:", error);
-            }
-        });
+    //     await this._dialogManager.continueDialog(context, OAuthDialog.name).catch((error: any): void => {
+    //         console.error(error);
+    //         while (error?.cause) {
+    //             error = error.cause;
+    //             console.error("Caused by:", error);
+    //         }
+    //     });
 
-        return await next();
-    }
+    //     return await next();
+    // }
 
     private async _handleMessage(context: TurnContext, next: () => Promise<void>): Promise<void> {
         console.debug("context.activity:", context.activity);
@@ -322,11 +312,7 @@ export class TeamsBot extends TeamsActivityHandler {
         }
 
         await this._handlerManager.resolveAndDispatch(context, text).catch((error: any): void => {
-            console.error(error);
-            while (error?.cause) {
-                error = error.cause;
-                console.error("Caused by:", error);
-            }
+            this._handleError(context, error);
         });
 
         return await next();
@@ -345,4 +331,23 @@ export class TeamsBot extends TeamsActivityHandler {
         }
         return await next();
     }
+
+    private async _handleError(context: TurnContext, error: any): Promise<void> {
+        let errorMsg = `Hay ocurrido un error al procesar la actividad. Por favor, inténtalo de nuevo más tarde.\n\n Razón: ${error.message}\n\n`;
+
+        console.error(error);
+
+        while (error?.cause || error?.reason) {
+            error = error.cause || error.reason;
+            errorMsg += `Causado por: '${error.message}'\n`;
+
+            console.error("Caused by:", error);
+        }
+
+        if (errorMsg.length > 0) {
+            await context.sendActivity(errorMsg);
+        }
+    }
+}
+
 }

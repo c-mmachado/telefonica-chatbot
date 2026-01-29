@@ -101,22 +101,27 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
     }
 
     private async _createTicket(context: TurnContext, data: Record<string, any>): Promise<void> {
-        const trigger: HandlerTriggerData = (context as any).trigger();
+        const trigger: Partial<HandlerTriggerData> = (context as any).trigger();
 
         console.debug(`trigger:`, trigger);
 
         // Get the initial message in the thread (The message that started the thread and contains a subject header)
-        let thread: ChatMessage = trigger.thread!;
+        let thread: ChatMessage | undefined = trigger.thread;
+        if (!thread) {
+            throw new Error("Could not retrieve the initial message of the thread");
+        }
 
         let replies: ChatMessage[] = [];
         if (trigger.team?.aadGroupId && trigger.channel?.id && trigger.thread?.id) {
             // Get all the replies in the thread
             replies = await this._graph.teams
-                .id(trigger.team!.aadGroupId!)
-                .channels.id(trigger.channel!.id!)
-                .messages.id(trigger.thread!.id!)
+                .id(trigger.team.aadGroupId)
+                .channels.id(trigger.channel.id)
+                .messages.id(trigger.thread.id)
                 .replies.get();
         }
+
+        console.log(replies);
 
         // Add the initial message to the replies and ticket description from the card to the beginning of the replies
         // to be added as comments to the ticket

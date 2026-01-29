@@ -301,7 +301,7 @@ export const graphClient: DefaultGraphClient = new DefaultGraphClient({
             if (!result?.accessToken) {
                 throw new Error("Could not acquire access token for Graph API client.");
             }
-            console.debug(result);
+            // console.debug(result);
             return result.accessToken;
         },
     },
