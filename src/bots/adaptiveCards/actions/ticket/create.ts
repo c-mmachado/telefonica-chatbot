@@ -166,7 +166,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             Subject: thread.subject ?? "<No Subject>",
             Status: data.ticket.ticketStateChoiceSet.value,
             Content: data.ticket.ticketDescriptionInput.value,
-            TimeWorked: data.ticket.ticketTimeTakenInput.value,
+            TimeWorked: +data.ticket.ticketTimeTakenInput.value,
             Requestor: trigger.threadFrom.email,
             Owner: owner.Name, //trigger.replyFrom.email,
             CustomFields: customFieldsBody,
