@@ -72,7 +72,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
 
             // Prepare the card data for the adaptive card
             const cardData: AdaptiveCardTicketCardPageData = {
-                requestId: data.requestId,
+                requestId: actionData.requestId,
                 gui: data.gui,
             };
 
@@ -83,7 +83,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
                 $root: cardData,
             });
 
-            console.debug(`cardJson:`, cardJson);
+            // console.debug(`cardJson:`, cardJson);
 
             // Creates a message attachment activity with the adaptive card using the expanded card template
             // and updated the existing adaptive card activity, id'ed by ' handlerContext.context.activity.replyToId'
@@ -121,7 +121,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
                 .replies.get();
         }
 
-        console.log(replies);
+        // console.log(replies);
 
         // Add the initial message to the replies and ticket description from the card to the beginning of the replies
         // to be added as comments to the ticket

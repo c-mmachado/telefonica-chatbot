@@ -127,7 +127,7 @@ class DefaultClientRequest implements ClientRequest {
             };
         }
 
-        console.debug(`Making request to resource '${method?.toUpperCase()} ${this._path}'`);
+        console.info(`Making request to resource '${method?.toUpperCase()} ${this._path}'`);
         console.debug(`options:`, options);
 
         return fetch(this._url(options?.queryParams ?? {}), {
@@ -852,8 +852,8 @@ export abstract class BaseSchemaEndpointConfigurer<
         //     path = path(this);
         // } else
         if (typeof path === "string") {
-            console.debug("Original path string:", path);
-            console.debug("Resolving path with variables:", this._variables);
+            // console.debug("Original path string:", path);
+            // console.debug("Resolving path with variables:", this._variables);
 
             Object.entries(this._variables).forEach(([key, value]: [string, string | number | boolean]): void => {
                 path = path!.replace(`{${key}}`, encodeURIComponent(String(value)));
