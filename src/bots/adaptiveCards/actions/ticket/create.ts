@@ -66,8 +66,8 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
                     customFieldJson.items[1].items[0].text = cfState.value;
                     customFieldJson.items[1].selectAction.isEnabled = false;
 
-                    delete customFieldJson.items[1].items[0].value; 
-                    delete customFieldJson.items[1].items[0].isRequired; 
+                    delete customFieldJson.items[1].items[0].value;
+                    delete customFieldJson.items[1].items[0].isRequired;
                     delete customFieldJson.items[1].items[0].choices;
                     delete customFieldJson.items[1].items[0].placeholder;
                     delete customFieldJson.items[1].items[0].isMultiSelect;
@@ -95,11 +95,18 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             // Creates a message attachment activity with the adaptive card using the expanded card template
             // and updated the existing adaptive card activity, id'ed by ' handlerContext.context.activity.replyToId'
             // with the new adaptive card JSON.
-            const message = MessageFactory.attachment(CardFactory.adaptiveCard(cardJson));
-            message.id = context.activity.replyToId;
 
-            // Sends the update to the existing adaptive card to the user
+            const message = MessageFactory.attachment(CardFactory.adaptiveCard(cardJson));
+
+            message.id = context.activity.replyToId;
             await context.updateActivity(message);
+
+            const replyToId = context?.activity?.replyToId;
+            if (replyToId) {
+                await context.deleteActivity(replyToId);
+            }
+            await context.sendActivity(message);
+
             return;
         }
 

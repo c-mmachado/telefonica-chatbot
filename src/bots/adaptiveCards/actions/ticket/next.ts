@@ -89,7 +89,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
     }
 
     private async _buildCustomFields(
-        state: Record<string, any>,
+        data: Record<string, any>,
         actionData: AdaptiveCardActionPositiveTicketPageData,
     ): Promise<any[]> {
         if (!actionData.ticketCategoryChoiceSet) {
@@ -166,7 +166,7 @@ export class TicketAdaptiveCardNextActionHandler extends ActionHandler {
                         : [],
             };
         }
-        state.ticket.customFields = customFieldMap;
+        data.ticket.customFields = customFieldMap;
 
         const customFieldJson: any[] = customFields.map((field: CustomField) => {
             if (!field.id) {
