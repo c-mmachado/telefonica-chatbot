@@ -19,8 +19,6 @@ import { GraphClient } from "../../../../utils/client/graph";
 import { isKeyOf } from "../../../../utils/misc";
 // import { LogsRepository } from "../../../server/repositories/logs";
 
-import page1 from "../../templates/ticket/page1.json";
-
 export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
     public pattern: string = "createTicket";
 
@@ -86,7 +84,7 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             console.debug(`cardData:`, cardData);
 
             // Expands the adaptive card template with the data provided
-            const cardJson = new ACData.Template(page1).expand({
+            const cardJson = new ACData.Template(data.page1).expand({
                 $root: cardData,
             });
 
@@ -101,11 +99,11 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             message.id = context.activity.replyToId;
             await context.updateActivity(message);
 
-            const replyToId = context?.activity?.replyToId;
-            if (replyToId) {
-                await context.deleteActivity(replyToId);
-            }
-            await context.sendActivity(message);
+            // const replyToId = context?.activity?.replyToId;
+            // if (replyToId) {
+            //     await context.deleteActivity(replyToId);
+            // }
+            // await context.sendActivity(message);
 
             return;
         }
