@@ -63,7 +63,14 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
                 if (cfState.type === "Select") {
                     customFieldJson.items[1].items[0].type = "TextBlock";
                     customFieldJson.items[1].items[0].choices = [];
+                    customFieldJson.items[1].items[0].text = cfState.value;
                     customFieldJson.items[1].selectAction.isEnabled = false;
+
+                    delete customFieldJson.items[1].items[0].value; 
+                    delete customFieldJson.items[1].items[0].isRequired; 
+                    delete customFieldJson.items[1].items[0].choices;
+                    delete customFieldJson.items[1].items[0].placeholder;
+                    delete customFieldJson.items[1].items[0].isMultiSelect;
                 } else {
                     customFieldJson.items[1].text = cfState.value;
                     customFieldJson.items[1].type = "TextBlock";

@@ -22,8 +22,8 @@ export class TicketAdaptiveCardSelectChoiceActionHandler implements ActionHandle
         const actionData: AdaptiveCardActionSelectChoiceData = activityValue?.action?.data;
         const data: Record<string, any> = (context as any).request().data;
 
-        console.debug(`actionData:`, actionData);
-        console.debug(`data:`, data);
+        console.debug(`activityValue:`, activityValue);
+        // console.debug(`data:`, data);
 
         // Validate that we can retrieve the state
         if (!data) {
