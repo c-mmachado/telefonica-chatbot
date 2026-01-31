@@ -7,21 +7,27 @@ import {
     InvokeResponse,
     TeamsInfo,
     TeamsChannelAccount,
-    MemoryStorage,
+    // MemoryStorage,
     // CloudAdapter,
 } from "botbuilder";
 // import { UserTokenClient } from "botframework-connector";
 
 import { BotConfiguration } from "../config/config";
 import { HandlerManager } from "./commands/manager";
-import { DialogManager } from "./dialogs/manager";
+// import { DialogManager } from "./dialogs/manager";
 import { AdaptiveCardAction, AdaptiveCardActionActivityValue } from "./adaptiveCards/actions/actions";
 import { AdaptiveCards } from "./adaptiveCards/adaptiveCards";
 
 import { TechnicianRepository } from "../server/repositories/technicians";
 import { HandlerTurnContextFactory } from "./commands/context";
 
-export interface TeamsBotOptions {
+export abstract class ActivityHandlerFactory<ParamTypes extends Array<any> = []> {
+    public static Default: ActivityHandlerFactory<[DefaultActivityHandlerOptions]>;
+
+    public abstract create(...options: ParamTypes): TeamsActivityHandler;
+}
+
+interface DefaultActivityHandlerOptions {
     config: BotConfiguration;
 
     conversationState: ConversationState;
@@ -30,121 +36,36 @@ export interface TeamsBotOptions {
 
     handlerManager: HandlerManager;
 
-    dialogManager: DialogManager;
+    // dialogManager: DialogManager;
 
     techRepository: TechnicianRepository;
 
     contextFactory: HandlerTurnContextFactory;
 }
 
-export interface TeamsBotBuilder {
-    options(options: TeamsBotOptions): TeamsBotBuilder;
+// @ts-ignore
+class DefaultActivityHandlerFactory extends ActivityHandlerFactory<[DefaultActivityHandlerOptions]> {
+    private static _instance: DefaultActivityHandlerFactory = new DefaultActivityHandlerFactory();
 
-    config(config: BotConfiguration): TeamsBotBuilder;
-
-    conversationState(conversationState: ConversationState): TeamsBotBuilder;
-
-    userState(userState: UserState): TeamsBotBuilder;
-
-    handlerManager(handlerManager: HandlerManager): TeamsBotBuilder;
-
-    // dialogManager(dialogManager: DialogManager): TeamsBotBuilder;
-
-    techRepository(techRepository: TechnicianRepository): TeamsBotBuilder;
-
-    contextFactory(contextFactory: HandlerTurnContextFactory): TeamsBotBuilder;
-
-    build(): TeamsBot;
-}
-
-export class DefaultTeamsBotBuilder implements TeamsBotBuilder {
-    // public static Instance: TeamsBotBuilder = new TeamsBotBuilder();
-
-    private _options: Partial<TeamsBotOptions> = {};
-
-    constructor() {
-        // if (TeamsBotBuilder.Instance) {
-        //   throw new Error(
-        //     `${TeamsBotBuilder.name} is a singleton class. Use '${TeamsBotBuilder.name}.Instance' to access the instance.`
-        //   );
-        // }
+    protected constructor() {
+        super();
+        ActivityHandlerFactory.Default = DefaultActivityHandlerFactory._instance;
     }
 
-    public options(options: TeamsBotOptions): TeamsBotBuilder {
-        this._options = options;
-        return this;
-    }
-
-    public config(config: BotConfiguration): TeamsBotBuilder {
-        this._options.config = config;
-        return this;
-    }
-
-    public conversationState(conversationState: ConversationState): TeamsBotBuilder {
-        this._options.conversationState = conversationState;
-        return this;
-    }
-
-    public userState(userState: UserState): TeamsBotBuilder {
-        this._options.userState = userState;
-        return this;
-    }
-
-    public handlerManager(handlerManager: HandlerManager): TeamsBotBuilder {
-        this._options.handlerManager = handlerManager;
-        return this;
-    }
-
-    // public dialogManager(dialogManager: DialogManager): TeamsBotBuilder {
-    //     this._options.dialogManager = dialogManager;
-    //     return this;
-    // }
-
-    public techRepository(techRepository: TechnicianRepository): TeamsBotBuilder {
-        this._options.techRepository = techRepository;
-        return this;
-    }
-
-    public contextFactory(contextFactory: HandlerTurnContextFactory): TeamsBotBuilder {
-        this._options.contextFactory = contextFactory;
-        return this;
-    }
-
-    public build(): TeamsBot {
-        if (!this._options.config) {
-            throw new Error(`Cannot build TeamsBot: missing 'config' option.`);
-        }
-        if (!this._options.conversationState) {
-            this._options.conversationState = new ConversationState(new MemoryStorage());
-        }
-        if (!this._options.userState) {
-            this._options.userState = new UserState(new MemoryStorage());
-        }
-        if (!this._options.handlerManager) {
-            throw new Error(`Cannot build TeamsBot: missing 'handlerManager' option.`);
-        }
-        // if (!this._options.dialogManager) {
-        //     throw new Error(`Cannot build TeamsBot: missing 'dialogManager' option.`);
-        // }
-        if (!this._options.techRepository) {
-            throw new Error(`Cannot build TeamsBot: missing 'techRepository' option.`);
-        }
-        if (!this._options.contextFactory) {
-            throw new Error(`Cannot build TeamsBot: missing 'contextFactory' option.`);
-        }
+    public create(options: DefaultActivityHandlerOptions): TeamsActivityHandler {
         return new TeamsBot(
-            this._options.config,
-            this._options.conversationState,
-            this._options.userState,
-            this._options.handlerManager,
-            // this._options.dialogManager,
-            this._options.techRepository,
-            this._options.contextFactory,
+            options.config,
+            options.conversationState,
+            options.userState,
+            options.handlerManager,
+            // options.dialogManager,
+            options.techRepository,
+            options.contextFactory,
         );
     }
 }
 
-export class TeamsBot extends TeamsActivityHandler {
+class TeamsBot extends TeamsActivityHandler {
     constructor(
         private readonly _config: BotConfiguration,
         private readonly _conversationState: ConversationState,

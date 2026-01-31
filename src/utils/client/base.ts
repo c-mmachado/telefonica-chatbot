@@ -35,10 +35,6 @@ export function createClient(
     return new DefaultClient(endpoint, basePath, authProvider);
 }
 
-// type ConditionalMethod<T, MethodName extends string> = T extends undefined
-//     ? never
-//     : { [K in MethodName]: () => Promise<T> };
-
 export type Header = string | number | boolean | Array<string | number | boolean>;
 export type Headers = Record<string, Header>;
 
@@ -314,63 +310,12 @@ export interface SchemaEndpointConfig<
     methods?: Methods;
 }
 
-// export interface SchemaClientRequestConfig extends SchemaConfig {
-//     getResponse?: ZodTypeAny;
-
-//     postRequest?: ZodTypeAny;
-
-//     postResponse?: ZodTypeAny;
-
-//     putRequest?: ZodTypeAny;
-
-//     putResponse?: ZodTypeAny;
-
-//     deleteResponse?: ZodTypeAny;
-// }
-
 export function createSchemaEndpointConfig<
     const Config extends SchemaEndpointConfig<Methods>,
     Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>> = {},
 >(config: Config): Config {
     return config;
 }
-
-/**
- * Utility type that infers the type from a Zod schema or returns `undefined` if the schema is not provided.
- */
-// type SchemaOrUndefined<T> = T extends ZodType<any> ? z.infer<T> : undefined;
-
-// export type InferFromConfig<C extends SchemaClientRequestConfig> = {
-//     /**
-//      * The schema for the `GET` response.
-//      */
-//     GetResponse: SchemaOrUndefined<C["getResponse"]>;
-
-//     /**
-//      * The schema for the `POST` request.
-//      */
-//     PostRequest: SchemaOrUndefined<C["postRequest"]>;
-
-//     /**
-//      * The schema for the `POST` response.
-//      */
-//     PostResponse: SchemaOrUndefined<C["postResponse"]>;
-
-//     /**
-//      * The schema for the `PUT` request.
-//      */
-//     PutRequest: SchemaOrUndefined<C["putRequest"]>;
-
-//     /**
-//      * The schema for the `PUT` response.
-//      */
-//     PutResponse: SchemaOrUndefined<C["putResponse"]>;
-
-//     /**
-//      * The schema for the `DELETE` response.
-//      */
-//     DeleteResponse: SchemaOrUndefined<C["deleteResponse"]>;
-// };
 
 export type InferFromConfig<Config extends SchemaEndpointConfig> = Config extends {
     methods: infer Methods extends Partial<Record<HttpMethod, MethodConfig<any, any>>>;
@@ -384,30 +329,6 @@ export type InferFromConfig<Config extends SchemaEndpointConfig> = Config extend
           };
       }
     : {};
-
-// export type SchemaClientRequest<Config extends SchemaClientRequestConfig> = ConfigurableSchemaClientRequest &
-//     (InferFromConfig<Config>["GetResponse"] extends undefined
-//         ? {}
-//         : {
-//               get: () => Promise<InferFromConfig<Config>["GetResponse"]>;
-//           }) &
-//     (InferFromConfig<Config>["PostResponse"] extends undefined
-//         ? {}
-//         : {
-//               post: (
-//                   content: InferFromConfig<Config>["PostRequest"]
-//               ) => Promise<InferFromConfig<Config>["PostResponse"]>;
-//           }) &
-//     (InferFromConfig<Config>["PutResponse"] extends undefined
-//         ? {}
-//         : {
-//               put: (content: InferFromConfig<Config>["PutRequest"]) => Promise<InferFromConfig<Config>["PutResponse"]>;
-//           }) &
-//     (InferFromConfig<Config>["DeleteResponse"] extends undefined
-//         ? {}
-//         : {
-//               delete: () => Promise<InferFromConfig<Config>["DeleteResponse"]>;
-//           });
 
 export type SchemaClientRequest<Config extends SchemaEndpointConfig> = ConfigurableSchemaClientRequest & {
     [Method in keyof InferFromConfig<Config>]: InferFromConfig<Config>[Method] extends {
@@ -604,52 +525,6 @@ class DefaultSchemaClientRequest<Config extends SchemaEndpointConfig> extends Ba
         // responseSchema.parse(response); // TODO: Reenable validation
         return response as MethodResponseType<Config, Method>;
     }
-
-    // public async get(): Promise<MethodResponseType<Config, HttpMethod.Get>> {
-    //     if (!this._supportsMethod(HttpMethod.Get)) {
-    //         throw new Error(`Resource does not support method '${HttpMethod.Get}'`);
-    //     }
-    //     await this._callbacks?.before?.get?.();
-    //     let response = await this.request.get();
-    //     response = this._callbacks?.after?.get ? await this._callbacks.after.get(response) : response;
-    //     return this._schemaForMethod(HttpMethod.Get, "response")?.parse(response);
-    // }
-
-    // public async post(
-    //     content: MethodRequestType<Config, HttpMethod.Post>
-    // ): Promise<MethodResponseType<Config, HttpMethod.Post>> {
-    //     if (!this._supportsMethod(HttpMethod.Post)) {
-    //         throw new Error(`Resource does not support method '${HttpMethod.Post}'`);
-    //     }
-    //     content = this._callbacks?.before?.post ? await this._callbacks.before.post(content) : content;
-    //     const validatedContent = this._schemaForMethod(HttpMethod.Post, "request")?.parse(content);
-    //     let response = await this.request.post(validatedContent);
-    //     response = this._callbacks?.after?.post ? await this._callbacks.after.post(response) : response;
-    //     return this._schemaForMethod(HttpMethod.Post, "response")?.parse(response);
-    // }
-
-    // public async put(
-    //     content: MethodRequestType<Config, HttpMethod.Put>
-    // ): Promise<MethodResponseType<Config, HttpMethod.Put>> {
-    //     if (!this._supportsMethod(HttpMethod.Put)) {
-    //         throw new Error(`Resource does not support method '${HttpMethod.Put}'`);
-    //     }
-    //     content = this._callbacks?.before?.put ? await this._callbacks.before.put(content) : content;
-    //     const validatedContent = this._schemaForMethod(HttpMethod.Put, "request")?.parse(content);
-    //     let response = await this.request.put(validatedContent);
-    //     response = this._callbacks?.after?.put ? await this._callbacks.after.put(response) : response;
-    //     return this._schemaForMethod(HttpMethod.Put, "response")?.parse(response);
-    // }
-
-    // public async delete(): Promise<MethodResponseType<Config, HttpMethod.Delete>> {
-    //     if (!this._supportsMethod(HttpMethod.Delete)) {
-    //         throw new Error(`Resource does not support method '${HttpMethod.Delete}'`);
-    //     }
-    //     await this._callbacks?.before?.delete?.();
-    //     let response = await this.request.delete();
-    //     response = this._callbacks?.after?.delete ? await this._callbacks.after.delete(response) : response;
-    //     return this._schemaForMethod(HttpMethod.Delete, "response")?.parse(response);
-    // }
 }
 
 function createSchemaClientRequest<Config extends SchemaEndpointConfig>(
@@ -664,158 +539,12 @@ function createSchemaClientRequest<Config extends SchemaEndpointConfig>(
         throw new Error("Argument 'config' must be a valid 'SchemaConfig' instance.");
     }
 
-    // const base =
     return DefaultSchemaClientRequest.create<Config>(request, config, callbacks);
-    // const isEnabled: Record<"get" | "post" | "put" | "delete", boolean> = {
-    //     get: !!config.getResponse,
-    //     post: !!(config.postRequest && config.postResponse),
-    //     put: !!(config.putRequest && config.putResponse),
-    //     delete: !!config.deleteResponse,
-    // };
-
-    // Wrap in Proxy to intercept access to disabled methods
-    // return new Proxy(base, {
-    //     get(target: DefaultSchemaClientRequest<C>, propertyName: string | symbol, receiver: any): any {
-    //         if (propertyName in base) {
-    //             let keyName = propertyName as keyof typeof isEnabled;
-    //             if (!isEnabled[keyName]) {
-    //                 throw new Error(`Attempting to access disabled property/method '${String(propertyName)}'`);
-    //             }
-
-    //             const baseKeyName = keyName as typeof keyName & keyof typeof base;
-    //             const value = base[baseKeyName];
-    //             if (typeof value === "function") {
-    //                 return value.bind(base);
-    //             }
-    //             return value;
-    //         }
-
-    //         const value = Reflect.get(target, propertyName, receiver);
-    //         if (typeof value === "function") {
-    //             return value.bind(target);
-    //         }
-    //         return value;
-    //     },
-    // }) as SchemaClientRequest<C>;
 }
-
-// export interface PagedCollection<_T> {
-//     // Intentionally left empty
-// }
-
-// export interface PagedSchemaClientRequestConfig<Collection extends PagedCollection<InferItemFromCollection<Collection>>>
-//     extends SchemaConfig {
-//     methods: {
-//         get: ResponseMethodConfig<Collection>;
-//     };
-// }
-
-// export type InferItemFromConfig<Config extends PagedSchemaClientRequestConfig<any>> =
-//     Config extends PagedSchemaClientRequestConfig<infer _P extends PagedCollection<infer T>> ? T : never;
-
-// export type InferItemFromCollection<Collection extends PagedCollection<any>> = Collection extends PagedCollection<
-//     infer Item
-// >
-//     ? Item
-//     : never;
-
-// export type InferCollectionFromConfig<Config extends PagedSchemaClientRequestConfig<any>> =
-//     Config extends PagedSchemaClientRequestConfig<infer Collection extends PagedCollection<any>> ? Collection : never;
-
-// export type PagedSchemaClientRequest<Config extends PagedSchemaClientRequestConfig<InferCollectionFromConfig<Config>>> =
-//     ConfigurableSchemaClientRequest &
-//         (MethodRequestType<Config, HttpMethod.Get> extends undefined
-//             ? MethodResponseType<Config, HttpMethod.Get> extends undefined
-//                 ? {}
-//                 : {
-//                       get: () => Promise<MethodResponseType<Config, HttpMethod.Get>>;
-//                   }
-//             : {
-//                   get: (
-//                       content: MethodRequestType<Config, HttpMethod.Get>
-//                   ) => Promise<MethodResponseType<Config, HttpMethod.Get>>;
-//               });
-
-// class DefaultPagedSchemaClientRequest<
-//     C extends PagedClientRequestSchemaConfig<InferCollectionFromConfig<C>>
-// > extends BaseConfigurableSchemaClientRequest {
-//     public static create<C extends PagedClientRequestSchemaConfig<InferCollectionFromConfig<C>>>(
-//         request: ClientRequest,
-//         config: C,
-//         callback?: (response: unknown) => Promise<InferCollectionFromConfig<C>>
-//     ): DefaultPagedSchemaClientRequest<C> {
-//         return new DefaultPagedSchemaClientRequest(request, config, callback);
-//     }
-
-//     private constructor(
-//         request: ClientRequest,
-//         private readonly _config: C,
-//         private readonly _callback?: (response: unknown) => Promise<InferCollectionFromConfig<C>>
-//     ) {
-//         super(request);
-//     }
-
-//     public async get(): Promise<InferCollectionFromConfig<C>> {
-//         if (!this._config.getResponse) {
-//             throw new Error("Resource does not support 'GET'");
-//         }
-//         let response = await this.request.get();
-//         response = this._callback ? await this._callback(response) : response;
-//         return this._config.getResponse.parse(response);
-//     }
-// }
-
-// export function createPagedSchemaClientRequest<C extends PagedClientRequestSchemaConfig<InferCollectionFromConfig<C>>>(
-//     request: ClientRequest,
-//     config: C,
-//     callback?: (response: unknown) => Promise<InferCollectionFromConfig<C>>
-// ): PagedSchemaClientRequest<C> {
-//     if (!request) {
-//         throw new Error("Argument 'request' must be a valid 'ClientRequest' instance.");
-//     }
-//     if (!config) {
-//         throw new Error("Argument 'config' must be a valid 'SchemaConfig' instance.");
-//     }
-
-//     const base = DefaultPagedSchemaClientRequest.create<C>(request, config, callback);
-//     const isEnabled: Record<"get", boolean> = {
-//         get: !!config.getResponse,
-//     };
-
-//     // Wrap in Proxy to intercept access to disabled methods
-//     return new Proxy(base, {
-//         get(target: DefaultPagedSchemaClientRequest<C>, propertyName: string | symbol, receiver: any): any {
-//             if (propertyName in base) {
-//                 let keyName = propertyName as keyof typeof isEnabled;
-//                 if (!isEnabled[keyName]) {
-//                     throw new Error(`Attempting to access disabled property/method '${String(propertyName)}'`);
-//                 }
-//                 const baseKeyName = keyName as typeof keyName & keyof typeof base;
-//                 const value = base[baseKeyName];
-//                 if (typeof value === "function") {
-//                     return value.bind(base);
-//                 }
-//                 return value;
-//             }
-
-//             const value = Reflect.get(target, propertyName, receiver);
-//             if (typeof value === "function") {
-//                 return value.bind(target);
-//             }
-//             return value;
-//         },
-//     }) as PagedSchemaClientRequest<C>;
-// }
 
 export interface SchemaEndpointConfigurer<Config extends SchemaEndpointConfig> {
     request: SchemaClientRequest<Config>;
 }
-
-// export interface PagedSchemaClientRequestBuilder<
-//     C extends PagedSchemaClientRequestConfig<InferCollectionFromConfig<C>>
-// > {
-//     request: PagedSchemaClientRequest<C>;
-// }
 
 export abstract class BaseSchemaEndpointConfigurer<
     Config extends SchemaEndpointConfig,
@@ -834,12 +563,12 @@ export abstract class BaseSchemaEndpointConfigurer<
         }
     }
 
-    protected variable(name: string, value: string): this {
+    protected variable(name: string, value: string | number | boolean): this {
         this._variables[name] = value;
         return this;
     }
 
-    protected variables(vars: Record<string, string>): this {
+    protected variables(vars: Record<string, string | number | boolean>): this {
         Object.keys(vars).forEach((key: string): void => {
             this.variable(key, vars[key]);
         });

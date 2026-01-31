@@ -87,7 +87,8 @@ const configSchema = z.object({
     server: serverSchema,
 });
 
-export type BotConfiguration = z.infer<typeof configSchema>;
+// export type BotConfiguration = z.infer<typeof configSchema>;
+export interface BotConfiguration extends z.infer<typeof configSchema> {}
 
 function mapEnvToObj(env: NodeJS.ProcessEnv): any {
     return {

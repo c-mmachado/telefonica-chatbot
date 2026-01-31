@@ -1,6 +1,5 @@
-import { ConversationState, MemoryStorage, UserState } from "botbuilder";
+import { ConversationState, MemoryStorage, TeamsActivityHandler, UserState } from "botbuilder";
 
-import { DefaultTeamsBotBuilder, TeamsBot } from "./teamsBot";
 import { DefaultHandlerManager, HandlerManager } from "./commands/manager";
 import { DefaultHandlerTurnContextFactory, HandlerTurnContextFactory } from "./commands/context";
 import { ConversationHelper, ConversationReferenceStore, DefaultConversationHelper } from "./commands/conversation";
@@ -19,6 +18,7 @@ import { techRepository } from "../config/db";
 
 import { rt as rtClient } from "../utils/client/rt/client";
 import { graphClient } from "../utils/client/graph";
+import { ActivityHandlerFactory } from "./teamsBot";
 
 // Define the state store for your bot.
 // See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
@@ -49,7 +49,7 @@ const tscah = new TicketAdaptiveCardSelectChoiceActionHandler(rtClient);
 
 const contextFactory: HandlerTurnContextFactory = new DefaultHandlerTurnContextFactory(
     dialogManager,
-    conversationHelper
+    conversationHelper,
 );
 
 // Create the handler manager
@@ -58,19 +58,16 @@ const handlerManager: HandlerManager = new DefaultHandlerManager(userState, conf
     actions: [arah, tnxah, tpah, tnah, tscah],
 });
 
-// Create the auth flow dialog
+// Create the auth flow dialog and register it in the dialog manager
 const dialog: OAuthDialog = new OAuthDialog(config, conversationState, new MemoryStorage());
-
-// Register the dialog with the dialog manager
 dialogManager.registerDialog(dialog);
 
-// Create the activity handler
-export const bot: TeamsBot = new DefaultTeamsBotBuilder()
-    .config(config)
-    .conversationState(conversationState)
-    .userState(userState)
-    .handlerManager(handlerManager)
-    // .dialogManager(dialogManager)
-    .techRepository(techRepository)
-    .contextFactory(contextFactory)
-    .build();
+// Create the activity handler for incoming Microsoft Teams activities
+export const bot: TeamsActivityHandler = ActivityHandlerFactory.Default.create({
+    config: config,
+    conversationState: conversationState,
+    userState: userState,
+    handlerManager: handlerManager,
+    techRepository: techRepository,
+    contextFactory: contextFactory,
+});
