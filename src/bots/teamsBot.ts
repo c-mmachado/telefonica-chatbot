@@ -41,6 +41,8 @@ interface DefaultActivityHandlerOptions {
     techRepository: TechnicianRepository;
 
     contextFactory: HandlerTurnContextFactory;
+
+    errorHandler: ActivityErrorHandler;
 }
 
 // @ts-ignore
@@ -61,7 +63,54 @@ class DefaultActivityHandlerFactory extends ActivityHandlerFactory<[DefaultActiv
             // options.dialogManager,
             options.techRepository,
             options.contextFactory,
+            options.errorHandler,
         );
+    }
+}
+
+export abstract class ActivityErrorHandlerFactory<ParamTypes extends Array<any> = []> {
+    public static Default: ActivityErrorHandlerFactory<[]>;
+
+    abstract create(...options: ParamTypes): ActivityErrorHandler;
+}
+
+// @ts-ignore
+class DefaultActivityErrorHandlerFactory extends ActivityErrorHandlerFactory<[]> {
+    private static _instance: DefaultActivityErrorHandlerFactory = new DefaultActivityErrorHandlerFactory();
+
+    protected constructor() {
+        super();
+        ActivityErrorHandlerFactory.Default = DefaultActivityErrorHandlerFactory._instance;
+    }
+
+    public create(): ActivityErrorHandler {
+        return new DefaultActivityErrorHandler();
+    }
+}
+
+export interface ActivityErrorHandler {
+    handle(context: TurnContext, error: any): Promise<void>;
+}
+
+class DefaultActivityErrorHandler implements ActivityErrorHandler {
+    public async handle(context: TurnContext, error: any): Promise<void> {
+        try {
+            let errorMsg = `Hay ocurrido un error al procesar la actividad. Por favor, inténtalo de nuevo más tarde.\n\n Razón: ${error.message}\n\n`;
+            console.error(error);
+
+            while (error?.cause || error?.reason) {
+                error = error.cause || error.reason;
+                errorMsg += `Causado por: '${error.message}'\n`;
+                console.error("Caused by:", error);
+            }
+
+            if (errorMsg.length > 0) {
+                await context.sendActivity(errorMsg);
+            }
+        } catch (error: any) {
+            console.error("Error handling activity error:", error);
+            // Swallow the error to prevent bot from crashing
+        }
     }
 }
 
@@ -74,6 +123,7 @@ class TeamsBot extends TeamsActivityHandler {
         // private readonly _dialogManager: DialogManager,
         private readonly _techRepository: TechnicianRepository,
         private readonly _contextFactory: HandlerTurnContextFactory,
+        private readonly _errorHandler: ActivityErrorHandler,
     ) {
         super();
 
@@ -98,7 +148,7 @@ class TeamsBot extends TeamsActivityHandler {
         const proxiedContext: TurnContext = this._contextFactory.create(context);
 
         await super.run(proxiedContext).catch(async (error: any): Promise<void> => {
-            await this._handleError(context, error).catch(async (err: any): Promise<void> => {
+            await this._errorHandler.handle(context, error).catch(async (err: any): Promise<void> => {
                 console.error("Error handling run error:", err);
             });
         });
@@ -158,7 +208,7 @@ class TeamsBot extends TeamsActivityHandler {
 
     private async _onSignInAction(context: TurnContext, query: SigninStateVerificationQuery): Promise<void> {
         return this._handlerManager.onSignInAction(context, query).catch(async (error: any): Promise<void> => {
-            await this._handleError(context, error).catch(async (err: any): Promise<void> => {
+            await this._errorHandler.handle(context, error).catch(async (err: any): Promise<void> => {
                 console.error("Error handling sign-in action error:", err);
             });
         });
@@ -237,7 +287,7 @@ class TeamsBot extends TeamsActivityHandler {
         }
 
         await this._handlerManager.resolveAndDispatch(context, text).catch(async (error: any): Promise<void> => {
-            await this._handleError(context, error).catch(async (err: any): Promise<void> => {
+            await this._errorHandler.handle(context, error).catch(async (err: any): Promise<void> => {
                 console.error("Error handling message dispatch error:", err);
             });
         });
@@ -256,25 +306,24 @@ class TeamsBot extends TeamsActivityHandler {
                 // await context.sendActivity(welcomeText);
             }
         }
+
         return await next();
     }
 
-    private async _handleError(context: TurnContext, error: any): Promise<void> {
-        let errorMsg = `Hay ocurrido un error al procesar la actividad. Por favor, inténtalo de nuevo más tarde.\n\n Razón: ${error.message}\n\n`;
+    // private async _handleError(context: TurnContext, error: any): Promise<void> {
+    //     let errorMsg = `Hay ocurrido un error al procesar la actividad. Por favor, inténtalo de nuevo más tarde.\n\n Razón: ${error.message}\n\n`;
 
-        console.error(error);
+    //     console.error(error);
 
-        while (error?.cause || error?.reason) {
-            error = error.cause || error.reason;
-            errorMsg += `Causado por: '${error.message}'\n`;
+    //     while (error?.cause || error?.reason) {
+    //         error = error.cause || error.reason;
+    //         errorMsg += `Causado por: '${error.message}'\n`;
 
-            console.error("Caused by:", error);
-        }
+    //         console.error("Caused by:", error);
+    //     }
 
-        if (errorMsg.length > 0) {
-            await context.sendActivity(errorMsg);
-        }
-    }
-}
-
+    //     if (errorMsg.length > 0) {
+    //         await context.sendActivity(errorMsg);
+    //     }
+    // }
 }

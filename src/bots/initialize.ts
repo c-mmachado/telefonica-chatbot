@@ -18,7 +18,7 @@ import { techRepository } from "../config/db";
 
 import { rt as rtClient } from "../utils/client/rt/client";
 import { graphClient } from "../utils/client/graph";
-import { ActivityHandlerFactory } from "./teamsBot";
+import { ActivityErrorHandlerFactory, ActivityHandlerFactory } from "./teamsBot";
 
 // Define the state store for your bot.
 // See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
@@ -62,6 +62,8 @@ const handlerManager: HandlerManager = new DefaultHandlerManager(userState, conf
 const dialog: OAuthDialog = new OAuthDialog(config, conversationState, new MemoryStorage());
 dialogManager.registerDialog(dialog);
 
+const errorHandler = ActivityErrorHandlerFactory.Default.create();
+
 // Create the activity handler for incoming Microsoft Teams activities
 export const bot: TeamsActivityHandler = ActivityHandlerFactory.Default.create({
     config: config,
@@ -70,4 +72,5 @@ export const bot: TeamsActivityHandler = ActivityHandlerFactory.Default.create({
     handlerManager: handlerManager,
     techRepository: techRepository,
     contextFactory: contextFactory,
+    errorHandler: errorHandler,
 });
