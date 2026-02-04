@@ -14,7 +14,7 @@ import { HandlerTriggerData } from "../../../commands/manager";
 import { BotConfiguration } from "../../../../config/config";
 import { RTClient } from "../../../../utils/client/rt/client";
 import { Queue } from "../../../../utils/client/rt/schemas/queues";
-import { TicketRef } from "../../../../utils/client/rt/schemas/tickets";
+import { TicketRef, UpdatedTicket } from "../../../../utils/client/rt/schemas/tickets";
 import { GraphClient } from "../../../../utils/client/graph";
 import { isKeyOf } from "../../../../utils/misc";
 // import { LogsRepository } from "../../../server/repositories/logs";
@@ -183,6 +183,12 @@ export class TicketAdaptiveCardCreateActionHandler implements ActionHandler {
             Owner: owner.Name, //trigger.replyFrom.email,
             CustomFields: customFieldsBody,
         });
+
+        const updatedTicket: UpdatedTicket = await this._rt.tickets.id(ticket.id!).request.put({
+            Status: data.ticket.ticketStateChoiceSet.value,
+        });
+        console.debug(`updatedTicket:`, updatedTicket);
+
         // queue,
         // thread.subject ?? "No Subject",
         // state.ticket.ticketStateChoiceSet.value,
