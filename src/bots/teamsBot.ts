@@ -45,13 +45,9 @@ interface DefaultActivityHandlerOptions {
     errorHandler: ActivityErrorHandler;
 }
 
-// @ts-ignore
 class DefaultActivityHandlerFactory extends ActivityHandlerFactory<[DefaultActivityHandlerOptions]> {
-    private static _instance: DefaultActivityHandlerFactory = new DefaultActivityHandlerFactory();
-
-    protected constructor() {
+    constructor() {
         super();
-        ActivityHandlerFactory.Default = DefaultActivityHandlerFactory._instance;
     }
 
     public create(options: DefaultActivityHandlerOptions): TeamsActivityHandler {
@@ -67,6 +63,7 @@ class DefaultActivityHandlerFactory extends ActivityHandlerFactory<[DefaultActiv
         );
     }
 }
+ActivityHandlerFactory.Default = new DefaultActivityHandlerFactory();
 
 export abstract class ActivityErrorHandlerFactory<ParamTypes extends Array<any> = []> {
     public static Default: ActivityErrorHandlerFactory<[]>;
@@ -74,19 +71,16 @@ export abstract class ActivityErrorHandlerFactory<ParamTypes extends Array<any> 
     abstract create(...options: ParamTypes): ActivityErrorHandler;
 }
 
-// @ts-ignore
 class DefaultActivityErrorHandlerFactory extends ActivityErrorHandlerFactory<[]> {
-    private static _instance: DefaultActivityErrorHandlerFactory = new DefaultActivityErrorHandlerFactory();
-
-    protected constructor() {
+    constructor() {
         super();
-        ActivityErrorHandlerFactory.Default = DefaultActivityErrorHandlerFactory._instance;
     }
 
     public create(): ActivityErrorHandler {
         return new DefaultActivityErrorHandler();
     }
 }
+ActivityErrorHandlerFactory.Default = new DefaultActivityErrorHandlerFactory();
 
 export interface ActivityErrorHandler {
     handle(context: TurnContext, error: any): Promise<void>;
